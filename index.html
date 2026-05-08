@@ -753,11 +753,13 @@
         /* ── Computed total ── */
         $('computed-total').textContent = fmtInt(totalPoints);
 
-        /* ── Farm end date ── */
-        const FARM_START = new Date('2025-01-30');
-        const farmEnd = new Date(FARM_START.getTime() + weeks * 7 * 24 * 60 * 60 * 1000);
-        const farmEndStr = farmEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        $('farm-end-date').textContent = weeks > 0 ? '↳ Farm ends around ' + farmEndStr : '';
+        /* ── Farm end date (weeks close on Thursdays) ── */
+        const FARM_START = new Date('2025-01-30'); // Thursday
+        const rawEnd = new Date(FARM_START.getTime() + weeks * 7 * 24 * 60 * 60 * 1000);
+        const dayOffset = (4 - rawEnd.getDay() + 7) % 7; // snap to next/same Thursday
+        const farmEnd = new Date(rawEnd.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+        const farmEndStr = farmEnd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        $('farm-end-date').textContent = weeks > 0 ? '↳ Farm ends ' + farmEndStr : '';
 
         /* ── Slider label ── */
         $('airdrop-pct-display').textContent = airdropPct.toFixed(1) + '%';
