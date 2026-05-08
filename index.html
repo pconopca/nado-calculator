@@ -497,6 +497,7 @@
                             <input type="number" id="weeks" value="40" min="0" max="200" step="1" placeholder="40">
                             <span class="unit-tag">WEEKS</span>
                         </div>
+                        <div class="field-note" id="farm-end-date"></div>
                     </div>
 
                     <!-- Calculated total -->
@@ -751,6 +752,12 @@
 
         /* ── Computed total ── */
         $('computed-total').textContent = fmtInt(totalPoints);
+
+        /* ── Farm end date ── */
+        const FARM_START = new Date('2025-01-30');
+        const farmEnd = new Date(FARM_START.getTime() + weeks * 7 * 24 * 60 * 60 * 1000);
+        const farmEndStr = farmEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        $('farm-end-date').textContent = weeks > 0 ? '↳ Farm ends around ' + farmEndStr : '';
 
         /* ── Slider label ── */
         $('airdrop-pct-display').textContent = airdropPct.toFixed(1) + '%';
