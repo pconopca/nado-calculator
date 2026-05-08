@@ -602,22 +602,6 @@
                             </div>
                         </div>
 
-                        <!-- Range comparison 8% vs 10% -->
-                        <div>
-                            <div class="result-label" style="margin-bottom:8px;padding:0 2px;">Projected Range (8% – 10%)</div>
-                            <div class="range-compare">
-                                <div class="range-compare-cell">
-                                    <span class="rc-label">Conservative · 8%</span>
-                                    <span class="rc-value" id="result-8pct">$0.00</span>
-                                    <span class="rc-sub" id="result-8pct-pp">$0.00 / point</span>
-                                </div>
-                                <div class="range-compare-cell">
-                                    <span class="rc-label">Optimistic · 10%</span>
-                                    <span class="rc-value" id="result-10pct">$0.00</span>
-                                    <span class="rc-sub" id="result-10pct-pp">$0.00 / point</span>
-                                </div>
-                            </div>
-                        </div>
 
                         <div class="results-grid">
                             <div class="result-item">
@@ -799,10 +783,6 @@
         $('result-per-point-sub').textContent = 'at ' + airdropPct.toFixed(1) + '% airdrop';
 
         /* ── Range comparison 8% vs 10% ── */
-        $('result-8pct').textContent    = hasFdv ? fmtUsd(yourUsd(8))  : '—';
-        $('result-8pct-pp').textContent = hasFdv ? fmtUsd(usdPerPt(8))  + ' / point' : '—';
-        $('result-10pct').textContent   = hasFdv ? fmtUsd(yourUsd(10)) : '—';
-        $('result-10pct-pp').textContent= hasFdv ? fmtUsd(usdPerPt(10)) + ' / point' : '—';
 
         /* ── Bottom stats ── */
         $('result-total-pts').textContent    = fmtCompact(totalPoints);
