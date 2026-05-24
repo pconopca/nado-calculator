@@ -452,7 +452,7 @@
         <div class="stats-bar">
             <div class="stat-item">
                 <div class="stat-label">Fixed + S1 Points</div>
-                <div class="stat-value">41.02M</div>
+                <div class="stat-value">35.02M</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">S2 Weekly Pool</div>
@@ -503,12 +503,20 @@
                                 <span class="val">80,000</span>
                             </div>
                             <div class="pts-breakdown-row">
-                                <span class="label"><span class="dot-sm"></span>Builder / Comp Points</span>
-                                <span class="val">8,000,000</span>
+                                <span class="label"><span class="dot-sm"></span>Builder Codes</span>
+                                <span class="val">1,000,000</span>
+                            </div>
+                            <div class="pts-breakdown-row">
+                                <span class="label"><span class="dot-sm"></span>Comp / Reserve</span>
+                                <span class="val">1,000,000</span>
+                            </div>
+                            <div class="pts-breakdown-row" style="opacity:.45;text-decoration:line-through;">
+                                <span class="label"><span class="dot-sm" style="background:var(--text-muted);"></span>Trading Comps (removed)</span>
+                                <span class="val">0</span>
                             </div>
                             <div class="pts-breakdown-row total-row">
                                 <span class="label">Subtotal</span>
-                                <span class="val">16,080,000</span>
+                                <span class="val">10,080,000</span>
                             </div>
                         </div>
                     </div>
@@ -522,7 +530,7 @@
                         <div class="pts-breakdown">
                             <div class="pts-breakdown-row">
                                 <span class="label"><span class="dot-sm"></span>Duration</span>
-                                <span class="val">68 weeks</span>
+                                <span class="val">~16 epochs</span>
                             </div>
                             <div class="pts-breakdown-row total-row">
                                 <span class="label">S1 Points (official)</span>
@@ -572,7 +580,7 @@
                     <!-- Calculated total -->
                     <div class="computed-total">
                         <span class="computed-total-label">Estimated Total Points</span>
-                        <span class="computed-total-value" id="computed-total">51,621,776</span>
+                        <span class="computed-total-value" id="computed-total">45,621,776</span>
                     </div>
 
                     <div class="divider"></div>
@@ -676,7 +684,7 @@
                         <div class="results-grid">
                             <div class="result-item">
                                 <div class="result-label">Total Points</div>
-                                <div class="result-value" id="result-total-pts" style="font-size:18px;">51.62M</div>
+                                <div class="result-value" id="result-total-pts" style="font-size:18px;">45.62M</div>
                                 <div class="result-sub">estimated supply</div>
                             </div>
                             <div class="result-item">
@@ -736,7 +744,7 @@
 
 <script>
     /* ── Constants ── */
-    const INITIAL_PTS = 16_080_000;
+    const INITIAL_PTS = 10_080_000; // Alpha 8M + Feedback 80K + Builder 1M + Comp/Reserve 1M
     const S1_PTS      = 24_941_776; // Official Season 1 total released by Nado
     const S2_START    = new Date('2026-05-22'); // Friday — S2 launch
 
