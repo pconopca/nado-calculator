@@ -389,6 +389,66 @@
 
         /* chain dot */
         .chain-dot { width:7px; height:7px; background:var(--ink-purple-light); border-radius:50%; display:inline-block; }
+
+        /* ── How it works button + popover ── */
+        .hiw-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+            color: var(--ink-purple-light);
+            background: var(--ink-purple-dim);
+            border: 1px solid var(--ink-purple-border);
+            border-radius: 5px; padding: 3px 8px; cursor: pointer;
+            transition: background .15s, border-color .15s;
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .hiw-btn:hover { background: rgba(123,63,228,.2); border-color: var(--ink-purple); }
+
+        .hiw-popover-wrap { position: relative; }
+        .hiw-popover {
+            display: none;
+            position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+            background: #1A1830;
+            border: 1px solid var(--ink-purple-border);
+            border-radius: 12px; padding: 16px;
+            z-index: 200;
+            box-shadow: 0 8px 32px rgba(0,0,0,.6);
+        }
+        .hiw-popover.open { display: block; }
+        .hiw-popover-title {
+            font-size: 12px; font-weight: 800; color: var(--text);
+            margin-bottom: 8px; letter-spacing: -.2px;
+        }
+        .hiw-popover p {
+            font-size: 11px; color: var(--text-2); line-height: 1.6; margin-bottom: 10px;
+        }
+        .hiw-table {
+            width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px;
+        }
+        .hiw-table th {
+            text-align: left; font-size: 10px; font-weight: 700;
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px;
+            padding: 4px 8px; border-bottom: 1px solid var(--border);
+        }
+        .hiw-table td {
+            padding: 5px 8px; color: var(--text-2); border-bottom: 1px solid rgba(255,255,255,.04);
+        }
+        .hiw-table tr:last-child td { border-bottom: none; }
+        .hiw-table td:last-child { font-weight: 700; color: var(--green); text-align: right; }
+        .hiw-table tr.hiw-active td { background: rgba(123,63,228,.08); color: var(--text); }
+        .hiw-table tr.hiw-active td:last-child { color: var(--ink-purple-light); }
+        .hiw-link {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11px; font-weight: 700;
+            color: var(--ink-purple-light); text-decoration: none;
+        }
+        .hiw-link:hover { text-decoration: underline; }
+        .hiw-close {
+            float: right; font-size: 16px; line-height: 1; cursor: pointer;
+            color: var(--text-muted); background: none; border: none;
+            font-family: inherit; padding: 0; margin-top: -2px;
+        }
+        .hiw-close:hover { color: var(--text); }
     </style>
 </head>
 <body>
@@ -456,11 +516,11 @@
             </div>
             <div class="stat-item">
                 <div class="stat-label">S2 Weekly Pool</div>
-                <div class="stat-value purple" id="stat-s2-pool">530K pts</div>
+                <div class="stat-value purple" id="stat-s2-pool">381K pts</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">Est. Total Points</div>
-                <div class="stat-value purple" id="stat-total-pts">91.28M</div>
+                <div class="stat-value purple" id="stat-total-pts">42.64M</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">Projected Airdrop</div>
@@ -546,22 +606,62 @@
                             <span class="field-hint" style="color:var(--green);">Active · Since May 22, 2026</span>
                         </div>
 
-                        <div class="field-label" style="font-size:11px;margin-bottom:4px;">
-                            Epoch Daily Avg Volume
-                            <span class="field-hint">Determines weekly pool</span>
+                        <div class="hiw-popover-wrap">
+                            <div class="field-label" style="font-size:11px;margin-bottom:4px;">
+                                Epoch Daily Avg Volume
+                                <button class="hiw-btn" id="hiw-btn" type="button">
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                        <circle cx="5" cy="5" r="4.5" stroke="currentColor" stroke-opacity=".8"/>
+                                        <path d="M5 3.2V5.2M5 6.8V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                    </svg>
+                                    How it works
+                                </button>
+                            </div>
+
+                            <!-- How it works popover -->
+                            <div class="hiw-popover" id="hiw-popover">
+                                <div class="hiw-popover-title">
+                                    Season 2 Points Pool
+                                    <button class="hiw-close" id="hiw-close" type="button">×</button>
+                                </div>
+                                <p>In Season 2, the weekly points pool is not fixed — it scales with the platform's epoch daily average trading volume. Higher volume = more points distributed that week.</p>
+                                <table class="hiw-table" id="hiw-table">
+                                    <thead>
+                                        <tr><th>Daily Avg Volume</th><th>Weekly Pool</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>&lt; $250M</td><td>300,000 pts</td></tr>
+                                        <tr><td>$250M</td><td>329,000 pts</td></tr>
+                                        <tr><td>$500M</td><td>381,000 pts</td></tr>
+                                        <tr><td>$750M</td><td>449,000 pts</td></tr>
+                                        <tr><td>$1B</td><td>530,000 pts</td></tr>
+                                        <tr><td>$1.25B</td><td>620,000 pts</td></tr>
+                                        <tr><td>$1.5B</td><td>722,000 pts</td></tr>
+                                        <tr><td>$1.75B</td><td>832,000 pts</td></tr>
+                                        <tr><td>≥ $2B</td><td>950,000 pts</td></tr>
+                                    </tbody>
+                                </table>
+                                <a href="https://x.com/nadoHQ/status/2057634717428802037" target="_blank" class="hiw-link">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                    </svg>
+                                    Full Season 2 announcement by @nadoHQ →
+                                </a>
+                            </div>
                         </div>
+
                         <div class="input-wrap">
                             <span style="font-size:15px;font-weight:700;color:var(--text-muted);flex-shrink:0;">$</span>
-                            <input type="number" id="s2-volume" value="1" min="0" step="0.1" placeholder="1">
+                            <input type="number" id="s2-volume" value="500" min="0" step="1" placeholder="500">
                             <select class="select-unit" id="s2-volume-unit">
                                 <option value="billion">Billion</option>
-                                <option value="million">Million</option>
+                                <option value="million" selected>Million</option>
                             </select>
                         </div>
 
                         <div class="computed-total" style="margin-top:6px;background:rgba(61,220,132,0.06);border-color:rgba(61,220,132,0.2);">
                             <span class="computed-total-label">Weekly Pool (S2)</span>
-                            <span class="computed-total-value" id="s2-weekly-pool" style="color:var(--green);">530,000 pts</span>
+                            <span class="computed-total-value" id="s2-weekly-pool" style="color:var(--green);">381,000 pts</span>
                         </div>
 
                         <div class="field" style="margin-top:12px;">
@@ -580,7 +680,7 @@
                     <!-- Calculated total -->
                     <div class="computed-total">
                         <span class="computed-total-label">Estimated Total Points</span>
-                        <span class="computed-total-value" id="computed-total">45,621,776</span>
+                        <span class="computed-total-value" id="computed-total">42,641,776</span>
                     </div>
 
                     <div class="divider"></div>
@@ -684,7 +784,7 @@
                         <div class="results-grid">
                             <div class="result-item">
                                 <div class="result-label">Total Points</div>
-                                <div class="result-value" id="result-total-pts" style="font-size:18px;">45.62M</div>
+                                <div class="result-value" id="result-total-pts" style="font-size:18px;">42.64M</div>
                                 <div class="result-sub">estimated supply</div>
                             </div>
                             <div class="result-item">
@@ -825,6 +925,7 @@
         /* S2 volume & weekly pool */
         const s2VolUsd = s2Vol * (s2VolUnit === 'billion' ? 1e9 : 1e6);
         const s2Pool   = weeklyPool(s2VolUsd);
+        updateHiwHighlight(s2VolUsd);
 
         /* Total points = Fixed + S1 + S2 */
         const totalPoints = INITIAL_PTS + S1_PTS + s2Weeks * s2Pool;
@@ -893,11 +994,43 @@
         el.addEventListener('change', calculate);
     });
 
+    /* ── How it works popover ── */
+    (function () {
+        const btn     = document.getElementById('hiw-btn');
+        const popover = document.getElementById('hiw-popover');
+        const closeBtn= document.getElementById('hiw-close');
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            popover.classList.toggle('open');
+        });
+        closeBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            popover.classList.remove('open');
+        });
+        document.addEventListener('click', function (e) {
+            if (!popover.contains(e.target) && e.target !== btn) {
+                popover.classList.remove('open');
+            }
+        });
+    })();
+
+    /* Highlight the active row in the HIW table based on current volume */
+    function updateHiwHighlight(volUsd) {
+        const rows = document.querySelectorAll('#hiw-table tbody tr');
+        const thresholds = [0, 250e6, 500e6, 750e6, 1e9, 1.25e9, 1.5e9, 1.75e9, 2e9];
+        let activeIdx = 0;
+        for (let i = thresholds.length - 1; i >= 0; i--) {
+            if (volUsd >= thresholds[i]) { activeIdx = i; break; }
+        }
+        rows.forEach((r, i) => r.classList.toggle('hiw-active', i === activeIdx));
+    }
+
     /* ── Boot ── */
     inputs.fdvUnit.value      = 'billion';
     inputs.fdv.value          = '1';
-    inputs.s2VolumeUnit.value = 'billion';
-    inputs.s2Volume.value     = '1';
+    inputs.s2VolumeUnit.value = 'million';
+    inputs.s2Volume.value     = '500';
     calculate();
 </script>
 
