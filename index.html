@@ -245,6 +245,38 @@
         .computed-total-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
         .computed-total-value { font-size:20px; font-weight:800; color:var(--ink-purple-light); letter-spacing:-.5px; }
 
+        /* ── Section grouping ── */
+        .section-head { display:flex; align-items:center; gap:8px; margin-bottom:-4px; }
+        .section-head .section-num {
+            width:20px; height:20px; flex-shrink:0; border-radius:6px;
+            background:var(--ink-purple-dim); border:1px solid var(--ink-purple-border);
+            color:var(--ink-purple-light); font-size:11px; font-weight:800;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .section-head .section-title { font-size:13px; font-weight:700; color:var(--text); }
+        .section-head .section-sub { font-size:11px; font-weight:500; color:var(--text-muted); margin-left:auto; }
+
+        /* ── Accordion (collapsible context) ── */
+        .accordion { border:1px solid var(--border); border-radius:10px; background:var(--input-bg); overflow:hidden; }
+        .accordion-trigger {
+            width:100%; display:flex; align-items:center; justify-content:space-between;
+            padding:12px 14px; background:var(--ink-purple-dim); border:none; cursor:pointer;
+            font-family:'Plus Jakarta Sans',sans-serif; text-align:left;
+            transition:background .15s;
+        }
+        .accordion-trigger:hover { background:var(--ink-purple-border); }
+        .accordion-trigger .acc-left { display:flex; flex-direction:column; gap:2px; }
+        .accordion-trigger .acc-title { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+        .accordion-trigger .acc-value { font-size:20px; font-weight:800; color:var(--ink-purple-light); letter-spacing:-.5px; }
+        .accordion-trigger .acc-right { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+        .accordion-trigger .acc-cta { font-size:11px; font-weight:600; color:var(--text-muted); }
+        .accordion-chevron { transition:transform .25s ease; color:var(--text-muted); }
+        .accordion.open .accordion-chevron { transform:rotate(180deg); }
+        .accordion-content { max-height:0; overflow:hidden; transition:max-height .32s ease; }
+        .accordion.open .accordion-content { max-height:700px; }
+        .accordion-inner { padding:14px; display:flex; flex-direction:column; gap:12px; }
+        .acc-sub-label { font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.6px; }
+
         /* ── Range slider ── */
         .range-wrap { display:flex; flex-direction:column; gap:8px; }
         .range-header { display:flex; align-items:center; justify-content:space-between; }
@@ -662,75 +694,42 @@
                 </div>
                 <div class="card-body">
 
-                    <!-- Fixed Points -->
+                    <!-- ═══ STEP 1 · Your points ═══ -->
+                    <div class="section-head">
+                        <span class="section-num">1</span>
+                        <span class="section-title">Your Points</span>
+                        <span class="tip">
+                            <span class="tip-icon">?</span>
+                            <span class="tip-box">Find your points balance in the Nado app under the Rewards / Points tab. Enter your total here.</span>
+                        </span>
+                    </div>
                     <div class="field">
-                        <div class="field-label">
-                            Fixed Points Distribution
-                            <span class="field-hint">One-time</span>
+                        <div class="input-wrap">
+                            <input type="number" id="your-points" value="0" min="0" step="1" placeholder="Enter your balance">
+                            <span class="unit-tag">PTS</span>
                         </div>
-                        <div class="info-banner amber" style="margin-bottom:2px;">
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <circle cx="7" cy="7" r="6.5" stroke="currentColor" stroke-opacity=".8"/>
-                                <path d="M7 4.5V7.5M7 9.5V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                            </svg>
-                            <span><strong>Disclosure:</strong> These are estimated fixed point totals based on publicly available information. Actual values may differ.</span>
-                        </div>
-                        <div class="pts-breakdown">
-                            <div class="pts-breakdown-row">
-                                <span class="label"><span class="dot-sm"></span>Alpha Points</span>
-                                <span class="val">8,000,000</span>
-                            </div>
-                            <div class="pts-breakdown-row">
-                                <span class="label"><span class="dot-sm"></span>Feedback Points</span>
-                                <span class="val">80,000</span>
-                            </div>
-                            <div class="pts-breakdown-row">
-                                <span class="label"><span class="dot-sm"></span>Builder Codes</span>
-                                <span class="val">1,000,000</span>
-                            </div>
-                            <div class="pts-breakdown-row">
-                                <span class="label"><span class="dot-sm"></span>Comp / Reserve</span>
-                                <span class="val">1,000,000</span>
-                            </div>
-                            <div class="pts-breakdown-row" style="opacity:.45;text-decoration:line-through;">
-                                <span class="label"><span class="dot-sm" style="background:var(--text-muted);"></span>Trading Comps (removed)</span>
-                                <span class="val">0</span>
-                            </div>
-                            <div class="pts-breakdown-row total-row">
-                                <span class="label">Subtotal</span>
-                                <span class="val">10,080,000</span>
-                            </div>
+                        <div class="presets" id="pts-presets">
+                            <button class="preset-chip" type="button" data-pts="10000">10K</button>
+                            <button class="preset-chip" type="button" data-pts="100000">100K</button>
+                            <button class="preset-chip" type="button" data-pts="500000">500K</button>
+                            <button class="preset-chip" type="button" data-pts="1000000">1M</button>
+                            <button class="preset-chip" type="button" data-pts="5000000">5M</button>
                         </div>
                     </div>
 
-                    <!-- Season 1 (locked) -->
-                    <div class="field">
-                        <div class="field-label">
-                            Season 1
-                            <span class="field-hint">Jan 30 – May 21, 2026 · Ended</span>
-                        </div>
-                        <div class="pts-breakdown">
-                            <div class="pts-breakdown-row">
-                                <span class="label"><span class="dot-sm"></span>Duration</span>
-                                <span class="val">~16 epochs</span>
-                            </div>
-                            <div class="pts-breakdown-row total-row">
-                                <span class="label">S1 Points (official)</span>
-                                <span class="val">24,941,776</span>
-                            </div>
-                        </div>
+                    <div class="divider"></div>
+
+                    <!-- ═══ STEP 2 · Season 2 farming ═══ -->
+                    <div class="section-head">
+                        <span class="section-num">2</span>
+                        <span class="section-title">Season 2 Farming</span>
+                        <span class="section-sub" style="color:var(--green);">● Active</span>
                     </div>
 
-                    <!-- Season 2 (active) -->
                     <div class="field">
-                        <div class="field-label">
-                            Season 2
-                            <span class="field-hint" style="color:var(--green);">Active · Since May 22, 2026</span>
-                        </div>
-
                         <div class="hiw-popover-wrap">
-                            <div class="field-label" style="font-size:11px;margin-bottom:4px;">
-                                Epoch Daily Avg Volume
+                            <div class="field-label" style="font-size:11px;">
+                                Daily Avg Volume
                                 <button class="hiw-btn" id="hiw-btn" type="button">
                                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                                         <circle cx="5" cy="5" r="4.5" stroke="currentColor" stroke-opacity=".8"/>
@@ -792,13 +791,13 @@
                         </div>
 
                         <div class="computed-total" style="margin-top:10px;background:rgba(61,220,132,0.06);border-color:rgba(61,220,132,0.2);">
-                            <span class="computed-total-label">Weekly Pool (S2)</span>
+                            <span class="computed-total-label">Weekly Pool</span>
                             <span class="computed-total-value" id="s2-weekly-pool" style="color:var(--green);">381,000 pts</span>
                         </div>
 
                         <div class="field" style="margin-top:12px;">
-                            <div class="field-label">
-                                Weeks of Farm (S2)
+                            <div class="field-label" style="font-size:11px;">
+                                Weeks of Farm
                                 <span class="field-hint">Adjustable</span>
                             </div>
                             <div class="input-wrap">
@@ -809,44 +808,16 @@
                         </div>
                     </div>
 
-                    <!-- Calculated total -->
-                    <div class="computed-total">
-                        <span class="computed-total-label">Estimated Total Points</span>
-                        <span class="computed-total-value" id="computed-total">42,641,776</span>
-                    </div>
-
                     <div class="divider"></div>
 
-                    <!-- Your points -->
-                    <div class="field">
-                        <div class="field-label">
-                            <span style="display:inline-flex;align-items:center;">
-                                Your Points
-                                <span class="tip">
-                                    <span class="tip-icon">?</span>
-                                    <span class="tip-box">Find your points balance in the Nado app under the Rewards / Points tab. Enter your total here.</span>
-                                </span>
-                            </span>
-                            <span class="field-hint">Your balance</span>
-                        </div>
-                        <div class="input-wrap">
-                            <input type="number" id="your-points" value="0" min="0" step="1" placeholder="0">
-                            <span class="unit-tag">PTS</span>
-                        </div>
-                        <div class="presets" id="pts-presets">
-                            <button class="preset-chip" type="button" data-pts="10000">10K</button>
-                            <button class="preset-chip" type="button" data-pts="100000">100K</button>
-                            <button class="preset-chip" type="button" data-pts="500000">500K</button>
-                            <button class="preset-chip" type="button" data-pts="1000000">1M</button>
-                            <button class="preset-chip" type="button" data-pts="5000000">5M</button>
-                        </div>
+                    <!-- ═══ STEP 3 · Valuation ═══ -->
+                    <div class="section-head">
+                        <span class="section-num">3</span>
+                        <span class="section-title">Valuation Scenario</span>
                     </div>
 
-                    <div class="divider"></div>
-
-                    <!-- Airdrop % slider -->
                     <div class="field">
-                        <div class="field-label">
+                        <div class="field-label" style="font-size:11px;">
                             Airdrop Allocation
                             <span class="field-hint">% of $INK supply</span>
                         </div>
@@ -864,11 +835,8 @@
                         </div>
                     </div>
 
-                    <div class="divider"></div>
-
-                    <!-- FDV -->
                     <div class="field">
-                        <div class="field-label">
+                        <div class="field-label" style="font-size:11px;">
                             <span style="display:inline-flex;align-items:center;">
                                 $INK FDV
                                 <span class="tip">
@@ -889,13 +857,85 @@
                         <div class="field-note" id="fdv-note">$1B FDV — adjust to model different valuations</div>
                     </div>
 
-                    <!-- Info banner -->
-                    <div class="info-banner amber">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <circle cx="7" cy="7" r="6.5" stroke="currentColor" stroke-opacity=".8"/>
-                            <path d="M7 4.5V7.5M7 9.5V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                        <span>The exact airdrop % is not confirmed yet. Projections suggest 8–10% of the $INK total supply will be allocated to Nado points holders. Total supply also unannounced — $ estimates use FDV only.</span>
+                    <div class="divider"></div>
+
+                    <!-- ═══ Total Points Pool (collapsible reference) ═══ -->
+                    <div class="accordion" id="pool-acc">
+                        <button class="accordion-trigger" id="pool-trigger" type="button" aria-expanded="false">
+                            <div class="acc-left">
+                                <span class="acc-title">Total Points Pool</span>
+                                <span class="acc-value" id="computed-total">42,641,776</span>
+                            </div>
+                            <div class="acc-right">
+                                <span class="acc-cta">See breakdown</span>
+                                <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M3.5 5.25L7 8.75l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="accordion-inner">
+
+                                <div>
+                                    <div class="acc-sub-label" style="margin-bottom:6px;">Fixed · one-time</div>
+                                    <div class="pts-breakdown">
+                                        <div class="pts-breakdown-row">
+                                            <span class="label"><span class="dot-sm"></span>Alpha Points</span>
+                                            <span class="val">8,000,000</span>
+                                        </div>
+                                        <div class="pts-breakdown-row">
+                                            <span class="label"><span class="dot-sm"></span>Feedback Points</span>
+                                            <span class="val">80,000</span>
+                                        </div>
+                                        <div class="pts-breakdown-row">
+                                            <span class="label"><span class="dot-sm"></span>Builder Codes</span>
+                                            <span class="val">1,000,000</span>
+                                        </div>
+                                        <div class="pts-breakdown-row">
+                                            <span class="label"><span class="dot-sm"></span>Comp / Reserve</span>
+                                            <span class="val">1,000,000</span>
+                                        </div>
+                                        <div class="pts-breakdown-row" style="opacity:.45;text-decoration:line-through;">
+                                            <span class="label"><span class="dot-sm" style="background:var(--text-muted);"></span>Trading Comps (removed)</span>
+                                            <span class="val">0</span>
+                                        </div>
+                                        <div class="pts-breakdown-row total-row">
+                                            <span class="label">Subtotal</span>
+                                            <span class="val">10,080,000</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="acc-sub-label" style="margin-bottom:6px;">Season 1 · Jan 30 – May 21, 2026 · Ended</div>
+                                    <div class="pts-breakdown">
+                                        <div class="pts-breakdown-row total-row">
+                                            <span class="label">S1 Points (official)</span>
+                                            <span class="val">24,941,776</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="acc-sub-label" style="margin-bottom:6px;">Season 2 · since May 22, 2026 · live</div>
+                                    <div class="pts-breakdown">
+                                        <div class="pts-breakdown-row total-row" style="background:rgba(61,220,132,0.06);">
+                                            <span class="label">S2 Points (weekly pool × weeks)</span>
+                                            <span class="val" id="acc-s2-pts" style="color:var(--green);">7,620,000</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="info-banner amber">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <circle cx="7" cy="7" r="6.5" stroke="currentColor" stroke-opacity=".8"/>
+                                        <path d="M7 4.5V7.5M7 9.5V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    </svg>
+                                    <span><strong>Disclosure:</strong> Fixed & airdrop figures are estimates from public info. The exact airdrop % is unconfirmed (projected 8–10% of $INK supply); $ estimates use FDV only.</span>
+                                </div>
+
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -1197,8 +1237,9 @@
         /* ── S2 weekly pool display ── */
         animateNum($('s2-weekly-pool'), s2Pool, v => fmtInt(v) + ' pts');
 
-        /* ── Computed total ── */
+        /* ── Computed total + S2 breakdown line ── */
         animateNum($('computed-total'), totalPoints, v => fmtInt(v));
+        animateNum($('acc-s2-pts'), s2Weeks * s2Pool, v => fmtInt(v));
 
         /* ── Volume meter + mini chart ── */
         updateVolMeter(s2VolUsd);
@@ -1277,6 +1318,18 @@
         closeBtn.addEventListener('click', e => { e.stopPropagation(); popover.classList.remove('open'); });
         document.addEventListener('click', e => {
             if (!popover.contains(e.target) && e.target !== btn) popover.classList.remove('open');
+        });
+    })();
+
+    /* ── Total Points Pool accordion ── */
+    (function () {
+        const acc = $('pool-acc'), trigger = $('pool-trigger');
+        if (!acc || !trigger) return;
+        const cta = trigger.querySelector('.acc-cta');
+        trigger.addEventListener('click', () => {
+            const open = acc.classList.toggle('open');
+            trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (cta) cta.textContent = open ? 'Hide breakdown' : 'See breakdown';
         });
     })();
 
