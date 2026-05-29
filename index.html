@@ -473,8 +473,30 @@
         .hiw-chart-area { fill: url(#hiwGrad); opacity: .25; }
         .hiw-chart-marker { fill: var(--green); stroke: #0B0A12; stroke-width: 2.5; transition: cx .35s cubic-bezier(.4,0,.2,1), cy .35s cubic-bezier(.4,0,.2,1); }
         .hiw-chart-guide { stroke: rgba(255,255,255,.12); stroke-width: 1; stroke-dasharray: 3 3; transition: x1 .35s, x2 .35s; }
-        .hiw-readout { font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-align: center; }
-        .hiw-readout strong { color: var(--green); font-weight: 700; }
+        .hiw-readout {
+            font-size: 11px; color: var(--text-2); margin: 4px 0 12px; text-align: center;
+            padding: 7px 10px; background: var(--green-dim);
+            border: 1px solid var(--green-border); border-radius: 8px;
+        }
+        .hiw-readout strong { color: var(--green); font-weight: 800; }
+        .hiw-popover p strong { color: var(--ink-purple-light); font-weight: 700; }
+
+        /* chart axes */
+        .hiw-axis-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-bottom: 6px; }
+        .hiw-chart-box { display: flex; gap: 6px; }
+        .hiw-yaxis {
+            display: flex; flex-direction: column; justify-content: space-between;
+            font-size: 8px; color: var(--text-muted); text-align: right;
+            padding: 1px 0 14px; min-width: 28px; font-variant-numeric: tabular-nums;
+        }
+        .hiw-chart-main { flex: 1; min-width: 0; }
+        .hiw-xaxis {
+            display: flex; justify-content: space-between;
+            font-size: 8px; color: var(--text-muted); margin-top: 2px;
+            font-variant-numeric: tabular-nums;
+        }
+        .hiw-grid { stroke: rgba(255,255,255,.06); stroke-width: 1; }
+        .hiw-chart-guide-h { stroke: rgba(61,220,132,.4); stroke-width: 1; stroke-dasharray: 3 3; transition: y1 .35s, y2 .35s; }
 
         /* ── Epoch countdown badge ── */
         .epoch-badge {
@@ -678,7 +700,7 @@
             </div>
             <div class="stat-item">
                 <div class="stat-label">Projected Airdrop</div>
-                <div class="stat-value green">8 – 10%</div>
+                <div class="stat-value green">3 – 10%</div>
                 <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">of $INK tokens</div>
             </div>
         </div>
@@ -744,25 +766,48 @@
                             <!-- How it works popover -->
                             <div class="hiw-popover" id="hiw-popover">
                                 <div class="hiw-popover-title">
-                                    Season 2 Points Pool
+                                    How the Season 2 pool works
                                     <button class="hiw-close" id="hiw-close" type="button">×</button>
                                 </div>
-                                <p>In Season 2, the weekly points pool is not fixed — it scales with the platform's epoch daily average trading volume. Higher volume = more points distributed that week.</p>
-                                <svg class="hiw-chart" viewBox="0 0 240 96" preserveAspectRatio="none" id="hiw-chart">
-                                    <defs>
-                                        <linearGradient id="hiwGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stop-color="#A67DFF"/>
-                                            <stop offset="100%" stop-color="#A67DFF" stop-opacity="0"/>
-                                        </linearGradient>
-                                    </defs>
-                                    <path class="hiw-chart-area" id="hiw-chart-area"></path>
-                                    <polyline class="hiw-chart-line" id="hiw-chart-line"></polyline>
-                                    <line class="hiw-chart-guide" id="hiw-chart-guide" x1="0" y1="0" x2="0" y2="88"></line>
-                                    <circle class="hiw-chart-marker" id="hiw-chart-marker" r="4.5" cx="0" cy="0"></circle>
-                                </svg>
-                                <div class="hiw-readout" id="hiw-readout">
-                                    <strong id="hiw-readout-vol">$500M/day</strong> → <strong id="hiw-readout-pool">381,000 pts</strong>/week
+                                <p>Every week (one epoch), Nado releases a <strong>points pool</strong> split among all traders by their share of points. Unlike Season 1's fixed emissions, this pool <strong>grows with trading volume.</strong></p>
+                                <p>The higher the platform's average daily volume that week, the bigger the pool — following the curve below.</p>
+
+                                <div class="hiw-axis-title">Weekly pool (pts) vs. daily volume</div>
+                                <div class="hiw-chart-box">
+                                    <div class="hiw-yaxis">
+                                        <span>950K</span>
+                                        <span>625K</span>
+                                        <span>300K</span>
+                                    </div>
+                                    <div class="hiw-chart-main">
+                                        <svg class="hiw-chart" viewBox="0 0 240 96" preserveAspectRatio="none" id="hiw-chart">
+                                            <defs>
+                                                <linearGradient id="hiwGrad" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stop-color="#A67DFF"/>
+                                                    <stop offset="100%" stop-color="#A67DFF" stop-opacity="0"/>
+                                                </linearGradient>
+                                            </defs>
+                                            <line class="hiw-grid" x1="8" y1="10" x2="232" y2="10"></line>
+                                            <line class="hiw-grid" x1="8" y1="47" x2="232" y2="47"></line>
+                                            <line class="hiw-grid" x1="8" y1="84" x2="232" y2="84"></line>
+                                            <path class="hiw-chart-area" id="hiw-chart-area"></path>
+                                            <polyline class="hiw-chart-line" id="hiw-chart-line"></polyline>
+                                            <line class="hiw-chart-guide-h" id="hiw-chart-guide-h" x1="8" y1="0" x2="0" y2="0"></line>
+                                            <line class="hiw-chart-guide" id="hiw-chart-guide" x1="0" y1="0" x2="0" y2="84"></line>
+                                            <circle class="hiw-chart-marker" id="hiw-chart-marker" r="4.5" cx="0" cy="0"></circle>
+                                        </svg>
+                                        <div class="hiw-xaxis">
+                                            <span>$0</span><span>$1B</span><span>$2B/day</span>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <div class="hiw-readout" id="hiw-readout">
+                                    Now: <strong id="hiw-readout-vol">$500M/day</strong> → <strong id="hiw-readout-pool">381,000 pts</strong> that week
+                                </div>
+
+                                <p>Your cut = <strong>your points ÷ everyone's points.</strong> This calculator multiplies the weekly pool by your number of farming weeks to project your total.</p>
+
                                 <a href="https://x.com/nadoHQ/status/2057634717428802037" target="_blank" class="hiw-link">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -833,7 +878,7 @@
                                 <span>0%</span>
                                 <span>100%</span>
                             </div>
-                            <div class="range-zone">⚡ Projected range: 8% – 10% of $INK total supply</div>
+                            <div class="range-zone">⚡ Projected range: 3% – 10% of $INK total supply</div>
                         </div>
                     </div>
 
@@ -933,7 +978,7 @@
                                         <circle cx="7" cy="7" r="6.5" stroke="currentColor" stroke-opacity=".8"/>
                                         <path d="M7 4.5V7.5M7 9.5V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                     </svg>
-                                    <span><strong>Disclosure:</strong> Fixed & airdrop figures are estimates from public info. The exact airdrop % is unconfirmed (projected 8–10% of $INK supply); $ estimates use FDV only.</span>
+                                    <span><strong>Disclosure:</strong> Fixed & airdrop figures are estimates from public info. The exact airdrop % is unconfirmed (projected 3–10% of $INK supply); $ estimates use FDV only.</span>
                                 </div>
 
                             </div>
@@ -982,12 +1027,12 @@
                             <div class="scenario-grid">
                                 <div class="scenario-cell">
                                     <div class="sc-label">Bear</div>
-                                    <div class="sc-pct">8% airdrop</div>
+                                    <div class="sc-pct">3% airdrop</div>
                                     <div class="sc-val" id="sc-bear">$0</div>
                                 </div>
                                 <div class="scenario-cell base">
                                     <div class="sc-label">Base</div>
-                                    <div class="sc-pct">9% airdrop</div>
+                                    <div class="sc-pct">6.5% airdrop</div>
                                     <div class="sc-val" id="sc-base">$0</div>
                                 </div>
                                 <div class="scenario-cell">
@@ -1280,12 +1325,12 @@
             $('result-usd-sub').textContent = 'Enter your points to calculate';
         }
 
-        /* ── Scenario band (Bear 8% / Base 9% / Bull 10%) ── */
+        /* ── Scenario band (Bear 3% / Base 6.5% / Bull 10%) ── */
         const showScenario = yourPoints > 0 && hasFdv;
         if (showScenario) {
-            animateNum($('sc-bear'), yourUsd(8),  v => fmtUsd(v));
-            animateNum($('sc-base'), yourUsd(9),  v => fmtUsd(v));
-            animateNum($('sc-bull'), yourUsd(10), v => fmtUsd(v));
+            animateNum($('sc-bear'), yourUsd(3),   v => fmtUsd(v));
+            animateNum($('sc-base'), yourUsd(6.5), v => fmtUsd(v));
+            animateNum($('sc-bull'), yourUsd(10),  v => fmtUsd(v));
         } else {
             setText($('sc-bear'), '—'); setText($('sc-base'), '—'); setText($('sc-bull'), '—');
         }
@@ -1355,7 +1400,9 @@
         const x = volToX(volUsd), y = poolToY(pool);
         const m = $('hiw-chart-marker'); m.setAttribute('cx', x); m.setAttribute('cy', y);
         const g = $('hiw-chart-guide'); g.setAttribute('x1', x); g.setAttribute('x2', x);
-        g.setAttribute('y1', y); g.setAttribute('y2', CY1 + 4);
+        g.setAttribute('y1', y); g.setAttribute('y2', CY1);
+        const gh = $('hiw-chart-guide-h');
+        if (gh) { gh.setAttribute('x1', CX0); gh.setAttribute('x2', x); gh.setAttribute('y1', y); gh.setAttribute('y2', y); }
     }
 
     /* ── Volume meter ── */
