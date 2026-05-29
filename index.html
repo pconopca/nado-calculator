@@ -513,20 +513,25 @@
         .vol-meter-track {
             position: relative; height: 8px; border-radius: 6px;
             background: #1d1930; border: 1px solid var(--border); overflow: visible;
+            user-select: none;
         }
         .vol-meter-fill {
             position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px;
             background: linear-gradient(90deg, var(--ink-purple), var(--ink-purple-light), var(--green));
-            background-size: 224px 100%;
-            transition: width .4s cubic-bezier(.4,0,.2,1);
+            /* background-size set in JS to match track width so gradient always spans full range */
+            transition: width .35s cubic-bezier(.4,0,.2,1);
         }
         .vol-meter-thumb {
-            position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%;
-            background: var(--green); border: 2px solid #0B0A12;
+            position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%;
+            background: var(--green); border: 2.5px solid #0B0A12;
             box-shadow: 0 0 0 3px rgba(61,220,132,.22);
             transform: translate(-50%,-50%);
-            transition: left .4s cubic-bezier(.4,0,.2,1);
+            transition: left .35s cubic-bezier(.4,0,.2,1);
+            cursor: grab; touch-action: none;
         }
+        .vol-meter-thumb:hover { box-shadow: 0 0 0 5px rgba(61,220,132,.28); }
+        .vol-meter-thumb.dragging { cursor: grabbing; transition: none; }
+        .vol-meter-fill.dragging { transition: none; }
         .vol-meter-scale { display: flex; justify-content: space-between; margin-top: 6px; font-size: 9px; color: var(--text-muted); font-weight: 600; }
 
         /* ── Points input mode toggle ── */
@@ -897,7 +902,7 @@
 
                         <!-- Volume meter -->
                         <div class="vol-meter">
-                            <div class="vol-meter-track">
+                            <div class="vol-meter-track" id="vol-meter-track">
                                 <div class="vol-meter-fill" id="vol-meter-fill" style="width:25%;"></div>
                                 <div class="vol-meter-thumb" id="vol-meter-thumb" style="left:25%;"></div>
                             </div>
@@ -1569,9 +1574,57 @@
     /* ── Volume meter ── */
     function updateVolMeter(volUsd) {
         const pct = Math.min(Math.max(volUsd / VOL_MAX, 0), 1) * 100;
-        $('vol-meter-fill').style.width = pct + '%';
-        $('vol-meter-thumb').style.left = pct + '%';
+        const fill = $('vol-meter-fill'), thumb = $('vol-meter-thumb'), track = $('vol-meter-track');
+        // Set background-size to track's real width so the gradient spans the full range
+        const tw = track ? track.offsetWidth : 400;
+        fill.style.backgroundSize = tw + 'px 100%';
+        fill.style.width = pct + '%';
+        thumb.style.left = pct + '%';
     }
+
+    /* ── Volume meter: draggable thumb + click-on-track ── */
+    (function () {
+        const track = $('vol-meter-track'), thumb = $('vol-meter-thumb');
+        const fill  = $('vol-meter-fill');
+        if (!track || !thumb) return;
+
+        function volFromX(clientX) {
+            const rect = track.getBoundingClientRect();
+            const pct  = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+            const volUsd = pct * VOL_MAX;
+            // Pick unit for a clean display number
+            if (volUsd >= 1e9) {
+                inputs.s2VolumeUnit.value = 'billion';
+                inputs.s2Volume.value = parseFloat((volUsd / 1e9).toFixed(2)).toString();
+            } else {
+                inputs.s2VolumeUnit.value = 'million';
+                inputs.s2Volume.value = String(Math.round(volUsd / 1e6));
+            }
+            calculate();
+        }
+
+        function startDrag(getX) {
+            thumb.classList.add('dragging'); fill.classList.add('dragging');
+            function move(e) { volFromX(getX(e)); }
+            function stop() {
+                thumb.classList.remove('dragging'); fill.classList.remove('dragging');
+                document.removeEventListener('mousemove', move);
+                document.removeEventListener('mouseup',  stop);
+                document.removeEventListener('touchmove', move);
+                document.removeEventListener('touchend',  stop);
+            }
+            document.addEventListener('mousemove', move);
+            document.addEventListener('mouseup',  stop);
+            document.addEventListener('touchmove', move, { passive: false });
+            document.addEventListener('touchend',  stop);
+        }
+
+        thumb.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e => e.clientX); });
+        thumb.addEventListener('touchstart', e => { e.preventDefault(); startDrag(e => e.touches[0].clientX); }, { passive: false });
+
+        // Click anywhere on track to jump
+        track.addEventListener('click', e => { if (e.target !== thumb) volFromX(e.clientX); });
+    })();
 
     /* ── Supply donut ── */
     const DONUT_C = 2 * Math.PI * 42; // ≈ 263.9
@@ -1668,7 +1721,7 @@
                 '🐻 Bear (3%): '   + fmtUsd(myUsd(3))   + '\n' +
                 '📊 Base (6.5%): ' + fmtUsd(myUsd(6.5)) + '\n' +
                 '🐂 Bull (10%): '  + fmtUsd(myUsd(10))  + '\n\n' +
-                '(' + fdvLabel + ')\n\n' +
+                fdvLabel + '\n\n' +
                 'What\'s yours? 👇';
         } else {
             text =
