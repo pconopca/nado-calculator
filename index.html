@@ -793,10 +793,10 @@
                     <div class="field" id="wallet-mode" style="display:none;">
                         <div class="input-wrap wallet-input-wrap">
                             <span style="font-size:13px;font-weight:700;color:var(--text-muted);flex-shrink:0;">⬡</span>
-                            <input type="text" id="wallet-address" placeholder="0x… your wallet address" spellcheck="false" autocomplete="off" autocapitalize="off">
+                            <input type="text" id="wallet-address" placeholder="0x… , name.eth or name.ink" spellcheck="false" autocomplete="off" autocapitalize="off">
                             <button class="wallet-fetch-btn" id="wallet-fetch" type="button">Track</button>
                         </div>
-                        <div class="wallet-status" id="wallet-status">Reads your on-chain Nado points via Nado's public API. Your address stays in your browser — nothing is stored or shared.</div>
+                        <div class="wallet-status" id="wallet-status">Paste a wallet address or a .eth / .ink name to read your on-chain Nado points. Your input stays in your browser — nothing is stored or shared.</div>
                     </div>
 
                     <div class="divider"></div>
@@ -1445,17 +1445,42 @@
         const btn = $('wallet-fetch'), addrEl = $('wallet-address'), status = $('wallet-status');
         if (!btn) return;
         const SCALE = 10n ** 18n; // points are returned scaled by 1e18
+        const NAME_CHAINS = { eth: '1', ink: '57073' }; // BENS chain ids for name resolution
         const setStatus = (cls, msg) => { status.className = 'wallet-status' + (cls ? ' ' + cls : ''); status.textContent = msg; };
+        const shorten = a => a.slice(0, 6) + '…' + a.slice(-4);
+
+        // Resolve a .eth / .ink name → 0x address via Blockscout BENS
+        async function resolveName(name) {
+            const tld = name.split('.').pop().toLowerCase();
+            const chainId = NAME_CHAINS[tld];
+            if (!chainId) return null;
+            const res = await fetch('https://bens.services.blockscout.com/api/v1/' + chainId +
+                '/domains/' + encodeURIComponent(name.toLowerCase()));
+            if (!res.ok) return null;
+            const d = await res.json();
+            return (d.resolved_address && d.resolved_address.hash) ||
+                   (d.owner && d.owner.hash) || null;
+        }
 
         async function track() {
-            const addr = (addrEl.value || '').trim();
-            if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) {
-                setStatus('error', 'Enter a valid wallet address (0x… , 42 characters).');
-                return;
-            }
-            setStatus('loading', 'Reading on-chain points…');
+            const raw = (addrEl.value || '').trim();
+            const isName = /\.(eth|ink)$/i.test(raw);
+            let addr = raw;
             btn.disabled = true;
             try {
+                if (isName) {
+                    setStatus('loading', 'Resolving ' + raw + '…');
+                    addr = await resolveName(raw);
+                    if (!addr) {
+                        setStatus('error', "Couldn't resolve " + raw + ". Check the name and try again.");
+                        return;
+                    }
+                }
+                if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+                    setStatus('error', 'Enter a wallet address (0x…) or a .eth / .ink name.');
+                    return;
+                }
+                setStatus('loading', 'Reading on-chain points…');
                 const res = await fetch('https://archive.prod.nado.xyz/v1', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1472,11 +1497,11 @@
                 const pts = Number(whole + halfUp);
                 inputs.yourPoints.value = String(pts);
                 calculate();
-                const short = addr.slice(0, 6) + '…' + addr.slice(-4);
-                if (pts > 0) setStatus('success', '✓ ' + fmtInt(pts) + ' points found for ' + short);
-                else setStatus('error', 'No Nado points found for ' + short + ' yet.');
+                const label = isName ? raw + ' (' + shorten(addr) + ')' : shorten(addr);
+                if (pts > 0) setStatus('success', '✓ ' + fmtInt(pts) + ' points found for ' + label);
+                else setStatus('error', 'No Nado points found for ' + label + ' yet.');
             } catch (err) {
-                setStatus('error', "Couldn't reach Nado's API. Check the address or try again.");
+                setStatus('error', "Couldn't reach the API. Check the address/name or try again.");
             } finally {
                 btn.disabled = false;
             }
