@@ -629,11 +629,11 @@
             white-space: nowrap;
             pointer-events: none; z-index: 10;
             opacity: 0;
-            transform: translate(-50%, 4px);
+            transform: translateY(4px);
             transition: opacity .14s, transform .14s;
             box-shadow: 0 4px 16px rgba(0,0,0,.6);
         }
-        .wh-tooltip.show { opacity: 1; transform: translate(-50%, 0); }
+        .wh-tooltip.show { opacity: 1; transform: translateY(0); }
         .wh-tt-epoch { color: var(--ink-purple-light); font-weight: 800; font-size: 11px; }
         .wh-tt-row2 { font-size: 11px; font-weight: 700; color: var(--text-2); margin-top: 2px; }
         .wh-tt-row2 .pts { color: var(--green); font-weight: 800; }
@@ -1657,11 +1657,24 @@
                 } else {
                     ttRow2.innerHTML = '<span class="none">No activity</span>';
                 }
-                // Position above the hovered bar (center-aligned)
+                // Show first so we can measure the tooltip width, then position+clamp
+                tt.classList.add('show');
+                const PAD = 6;
                 const barRect = bar.getBoundingClientRect();
                 const chartRect = chartEl.getBoundingClientRect();
-                tt.style.left = (barRect.left - chartRect.left + barRect.width / 2) + 'px';
-                tt.classList.add('show');
+                const barCenter = barRect.left - chartRect.left + barRect.width / 2;
+                const ttW = tt.offsetWidth;
+                const chartW = chartEl.clientWidth;
+                let leftEdge = barCenter - ttW / 2;
+                if (leftEdge < PAD) leftEdge = PAD;
+                else if (leftEdge + ttW > chartW - PAD) leftEdge = chartW - PAD - ttW;
+                tt.style.left = leftEdge + 'px';
+                // Move the arrow to keep pointing at the bar even when clamped
+                const arrow = tt.querySelector('.wh-tt-arrow');
+                if (arrow) {
+                    const arrowX = Math.max(8, Math.min(ttW - 8, barCenter - leftEdge));
+                    arrow.style.left = arrowX + 'px';
+                }
             }
             function hide() { const tt = $('wh-tooltip'); if (tt) tt.classList.remove('show'); }
             chartEl.addEventListener('mouseover', e => { if (e.target.classList && e.target.classList.contains('wh-bar')) show(e.target); });
