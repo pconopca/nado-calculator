@@ -615,6 +615,37 @@
             background: var(--input-bg);
             border: 1px solid var(--border);
             border-radius: 10px;
+            position: relative;
+        }
+        .wh-tooltip {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            background: #1A1830;
+            border: 1px solid var(--ink-purple-border);
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 11px; line-height: 1.4;
+            white-space: nowrap;
+            pointer-events: none; z-index: 10;
+            opacity: 0;
+            transform: translate(-50%, 4px);
+            transition: opacity .14s, transform .14s;
+            box-shadow: 0 4px 16px rgba(0,0,0,.6);
+        }
+        .wh-tooltip.show { opacity: 1; transform: translate(-50%, 0); }
+        .wh-tt-epoch { color: var(--ink-purple-light); font-weight: 800; font-size: 11px; }
+        .wh-tt-row2 { font-size: 11px; font-weight: 700; color: var(--text-2); margin-top: 2px; }
+        .wh-tt-row2 .pts { color: var(--green); font-weight: 800; }
+        .wh-tt-row2 .rank { color: var(--text-2); font-weight: 600; opacity: .9; }
+        .wh-tt-row2 .none { color: var(--text-muted); font-weight: 500; }
+        .wh-tt-arrow {
+            position: absolute; top: 100%; left: 50%;
+            margin-left: -5px;
+            width: 0; height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid var(--ink-purple-border);
         }
         .wh-bar {
             flex: 1; min-width: 4px; min-height: 3px;
@@ -889,7 +920,13 @@
                                 <span>Points per epoch</span>
                                 <span class="wh-title-sub">Latest →</span>
                             </div>
-                            <div class="wh-chart" id="wh-chart"></div>
+                            <div class="wh-chart" id="wh-chart">
+                                <div class="wh-tooltip" id="wh-tooltip">
+                                    <div class="wh-tt-row1"><span class="wh-tt-epoch" id="wh-tt-epoch">—</span></div>
+                                    <div class="wh-tt-row2" id="wh-tt-row2"></div>
+                                    <div class="wh-tt-arrow"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1579,16 +1616,20 @@
             for (const e of enriched) if (e.pts > maxPts) maxPts = e.pts;
             const lastActiveIdx = enriched.length - 1 - [...enriched].reverse().findIndex(e => e.pts > 0n);
 
-            // build bars
-            chartEl.innerHTML = enriched.map((e, i) => {
+            // Build bars (data-* drives the custom tooltip; preserve the tooltip element)
+            const tooltipEl = $('wh-tooltip');
+            const bars = enriched.map((e, i) => {
                 const pct = maxPts > 0n ? Number((e.pts * 1000n) / maxPts) / 10 : 0;
                 const cls = 'wh-bar' + (e.pts === 0n ? ' empty' : '') + (i === lastActiveIdx ? ' current' : '');
                 const ptsNum = Number(e.pts / SCALE);
-                const tip = e.label + (e.pts > 0n
-                    ? ': ' + fmtInt(ptsNum) + ' pts' + (e.rank ? ' · rank #' + fmtInt(e.rank) : '')
-                    : ': no activity');
-                return '<div class="' + cls + '" style="height:' + (e.pts === 0n ? 8 : Math.max(pct, 6)) + '%" title="' + tip.replace(/"/g, '&quot;') + '"></div>';
+                return '<div class="' + cls + '"' +
+                    ' style="height:' + (e.pts === 0n ? 8 : Math.max(pct, 6)) + '%"' +
+                    ' data-epoch="' + e.label.replace(/"/g, '&quot;') + '"' +
+                    ' data-pts="' + (e.pts > 0n ? fmtInt(ptsNum) : '') + '"' +
+                    ' data-rank="' + (e.rank || '') + '"' +
+                    '></div>';
             }).join('');
+            chartEl.innerHTML = bars + (tooltipEl ? tooltipEl.outerHTML : '');
 
             // build summary
             const parts = [];
@@ -1600,6 +1641,40 @@
         }
 
         function resetHistory() { if (historyEl) historyEl.hidden = true; }
+
+        // Tooltip on bar hover (event delegation; works for re-rendered bars)
+        (function setupTooltip() {
+            if (!chartEl) return;
+            function show(bar) {
+                // Re-lookup each time — renderHistory rewrites chart innerHTML
+                const tt = $('wh-tooltip'), ttEpoch = $('wh-tt-epoch'), ttRow2 = $('wh-tt-row2');
+                if (!tt || !ttEpoch || !ttRow2) return;
+                ttEpoch.textContent = bar.dataset.epoch || '';
+                const pts = bar.dataset.pts, rank = bar.dataset.rank;
+                if (pts) {
+                    ttRow2.innerHTML = '<span class="pts">' + pts + ' pts</span>' +
+                        (rank ? ' · <span class="rank">rank #' + fmtInt(Number(rank)) + '</span>' : '');
+                } else {
+                    ttRow2.innerHTML = '<span class="none">No activity</span>';
+                }
+                // Position above the hovered bar (center-aligned)
+                const barRect = bar.getBoundingClientRect();
+                const chartRect = chartEl.getBoundingClientRect();
+                tt.style.left = (barRect.left - chartRect.left + barRect.width / 2) + 'px';
+                tt.classList.add('show');
+            }
+            function hide() { const tt = $('wh-tooltip'); if (tt) tt.classList.remove('show'); }
+            chartEl.addEventListener('mouseover', e => { if (e.target.classList && e.target.classList.contains('wh-bar')) show(e.target); });
+            chartEl.addEventListener('mouseout',  e => { if (e.target.classList && e.target.classList.contains('wh-bar')) hide(); });
+            // Touch: tap shows, tap elsewhere hides
+            chartEl.addEventListener('touchstart', e => {
+                const t = e.target;
+                if (t.classList && t.classList.contains('wh-bar')) { e.preventDefault(); show(t); }
+            }, { passive: false });
+            document.addEventListener('touchstart', e => {
+                if (!chartEl.contains(e.target)) hide();
+            });
+        })();
 
         // Resolve a .eth / .ink name → 0x address via Blockscout BENS
         async function resolveName(name) {
