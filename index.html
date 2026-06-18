@@ -1113,15 +1113,11 @@
                             <div class="accordion-inner">
 
                                 <div>
-                                    <div class="acc-sub-label" style="margin-bottom:6px;">Fixed · one-time</div>
+                                    <div class="acc-sub-label" style="margin-bottom:6px;">Pre-Season 2 · issued or reserved</div>
                                     <div class="pts-breakdown">
                                         <div class="pts-breakdown-row">
-                                            <span class="label"><span class="dot-sm"></span>Alpha Points</span>
-                                            <span class="val">8,000,000</span>
-                                        </div>
-                                        <div class="pts-breakdown-row">
-                                            <span class="label"><span class="dot-sm"></span>Feedback Points</span>
-                                            <span class="val">80,000</span>
+                                            <span class="label"><span class="dot-sm" style="background:var(--ink-purple-light);"></span>Distributed (Alpha + Off-Season + S1)</span>
+                                            <span class="val">24,941,776</span>
                                         </div>
                                         <div class="pts-breakdown-row">
                                             <span class="label"><span class="dot-sm"></span>Builder Codes</span>
@@ -1137,17 +1133,7 @@
                                         </div>
                                         <div class="pts-breakdown-row total-row">
                                             <span class="label">Subtotal</span>
-                                            <span class="val">10,080,000</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="acc-sub-label" style="margin-bottom:6px;">Season 1 · Jan 30 – May 21, 2026 · Ended</div>
-                                    <div class="pts-breakdown">
-                                        <div class="pts-breakdown-row total-row">
-                                            <span class="label">S1 Points (official)</span>
-                                            <span class="val">24,941,776</span>
+                                            <span class="val">26,941,776</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1285,12 +1271,12 @@
                                 </div>
                                 <div class="donut-legend">
                                     <div class="donut-legend-row">
-                                        <span class="ll"><span class="sw" style="background:var(--amber);"></span>Fixed</span>
-                                        <span class="lv" id="legend-fixed">10.08M</span>
+                                        <span class="ll"><span class="sw" style="background:var(--ink-purple-light);"></span>Distributed</span>
+                                        <span class="lv" id="legend-s1">24.94M</span>
                                     </div>
                                     <div class="donut-legend-row">
-                                        <span class="ll"><span class="sw" style="background:var(--ink-purple-light);"></span>Season 1</span>
-                                        <span class="lv" id="legend-s1">24.94M</span>
+                                        <span class="ll"><span class="sw" style="background:var(--amber);"></span>Reserved</span>
+                                        <span class="lv" id="legend-fixed">2.00M</span>
                                     </div>
                                     <div class="donut-legend-row">
                                         <span class="ll"><span class="sw" style="background:var(--green);"></span>Season 2</span>
@@ -1353,8 +1339,11 @@
 
 <script>
     /* ── Constants ── */
-    const INITIAL_PTS = 10_080_000; // Alpha 8M + Feedback 80K + Builder 1M + Comp/Reserve 1M
-    const S1_PTS      = 24_941_776; // Official Season 1 total released by Nado
+    // Per Nado docs: 24,941,776 points distributed across Private Alpha, Off-Season, and Season 1.
+    // Builder Codes (1M) and Comp/Reserve (1M) remain as separate pools. Trading Comps was removed.
+    const DISTRIBUTED_PTS = 24_941_776; // Official total — Alpha + Off-Season + Season 1
+    const RESERVED_PTS    =  2_000_000; // Builder Codes 1M + Comp/Reserve 1M
+    const INITIAL_PTS     = DISTRIBUTED_PTS + RESERVED_PTS; // 26,941,776 pre-S2 subtotal
     const S2_START    = new Date('2026-05-22'); // Friday — S2 launch
 
     /* Season 2: epoch daily avg volume → weekly points pool
@@ -1461,8 +1450,8 @@
         const s2VolUsd = s2Vol * (s2VolUnit === 'billion' ? 1e9 : 1e6);
         const s2Pool   = weeklyPool(s2VolUsd);
 
-        /* Total points = Fixed + S1 + S2 */
-        const totalPoints = INITIAL_PTS + S1_PTS + s2Weeks * s2Pool;
+        /* Total points = Distributed + Reserved + S2 */
+        const totalPoints = INITIAL_PTS + s2Weeks * s2Pool;
 
         /* FDV */
         const fdvUsd = fdvVal * (fdvUnit === 'billion' ? 1e9 : 1e6);
@@ -1492,7 +1481,8 @@
         $('hiw-readout-pool').textContent = fmtInt(s2Pool) + ' pts';
 
         /* ── Supply donut ── */
-        updateDonut(INITIAL_PTS, S1_PTS, s2Weeks * s2Pool, totalPoints);
+        // Donut: amber=Reserved, purple=Distributed, green=S2 (id mapping unchanged)
+        updateDonut(RESERVED_PTS, DISTRIBUTED_PTS, s2Weeks * s2Pool, totalPoints);
 
         /* ── S2 end date (epochs close Thursdays; S2 started Friday May 22) ── */
         if (s2Weeks > 0) {
@@ -1958,7 +1948,7 @@
         const fdvUsd   = fdvNum * (inputs.fdvUnit.value === 'billion' ? 1e9 : 1e6);
         const s2VolUsd = s2Vol  * (inputs.s2VolumeUnit.value === 'billion' ? 1e9 : 1e6);
         const s2Pool   = weeklyPool(s2VolUsd);
-        const totalPts = INITIAL_PTS + S1_PTS + s2Wks * s2Pool;
+        const totalPts = INITIAL_PTS + s2Wks * s2Pool;
         const share    = totalPts > 0 ? pts / totalPts : 0;
         const myUsd    = pct => fdvUsd * (pct / 100) * share;
         const hasResults = pts > 0 && fdvUsd > 0;
