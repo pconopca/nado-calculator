@@ -746,15 +746,23 @@
         .icon-btn svg { flex-shrink: 0; }
 
         /* ── Tweet results button ── */
-        .tweet-btn {
+        .share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .tweet-btn, .png-btn {
             width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-            background: #000; color: #fff; border: 1px solid rgba(255,255,255,.12);
-            border-radius: 10px; padding: 11px 16px; cursor: pointer;
+            border-radius: 10px; padding: 11px 14px; cursor: pointer;
             font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 800;
-            letter-spacing: .1px; transition: background .15s, transform .1s;
+            letter-spacing: .1px; transition: background .15s, transform .1s, opacity .15s;
         }
+        .tweet-btn { background: #000; color: #fff; border: 1px solid rgba(255,255,255,.12); }
         .tweet-btn:hover { background: #111; }
-        .tweet-btn:active { transform: scale(.98); }
+        .png-btn {
+            background: var(--ink-purple-dim); color: var(--ink-purple-light);
+            border: 1px solid var(--ink-purple-border);
+        }
+        .png-btn:hover { background: rgba(123,63,228,.18); }
+        .tweet-btn:active, .png-btn:active { transform: scale(.98); }
+        .png-btn:disabled { opacity: .5; cursor: progress; }
+        @media (max-width: 420px) { .share-actions { grid-template-columns: 1fr; } }
 
         /* ── Scenario comparison (Bear / Base / Bull) ── */
         .scenario-grid {
@@ -1306,13 +1314,21 @@
                             </div>
                         </div>
 
-                        <!-- Share on X -->
-                        <button class="tweet-btn" id="tweet-btn" type="button">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                            </svg>
-                            Share my results on X
-                        </button>
+                        <!-- Share actions: tweet + save PNG -->
+                        <div class="share-actions">
+                            <button class="tweet-btn" id="tweet-btn" type="button">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                </svg>
+                                Share on X
+                            </button>
+                            <button class="png-btn" id="png-btn" type="button" title="Download a shareable PNG of your projection">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M7 1.5v7m0 0L4 5.5m3 3l3-3M2 11v.8a.7.7 0 0 0 .7.7h8.6a.7.7 0 0 0 .7-.7V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Save as PNG
+                            </button>
+                        </div>
 
                         <div class="results-grid">
                             <div class="result-item">
@@ -2227,6 +2243,199 @@
         const url = 'https://x.com/intent/tweet?text=' + encodeURIComponent(text) +
                     '&url=' + encodeURIComponent('https://nado-calculator.vercel.app/');
         window.open(url, '_blank', 'noopener,width=600,height=500');
+    });
+
+    /* ── Save results as PNG (1200×630 social card) ── */
+    function buildResultsCanvas() {
+        // Read state synchronously from inputs (immune to rAF/animation state)
+        const pts      = Math.max(0, parseFloat(inputs.yourPoints.value) || 0);
+        const fdvNum   = Math.max(0, parseFloat(inputs.fdv.value)        || 0);
+        const s2Wks    = Math.max(0, parseFloat(inputs.s2Weeks.value)    || 0);
+        const fdvUsd   = fdvNum * (inputs.fdvUnit.value === 'billion' ? 1e9 : 1e6);
+        let s2Pool;
+        if (poolMode === 'live' && liveAvgPool != null) {
+            s2Pool = liveAvgPool;
+        } else {
+            const s2Vol    = Math.max(0, parseFloat(inputs.s2Volume.value) || 0);
+            const s2VolUsd = s2Vol * (inputs.s2VolumeUnit.value === 'billion' ? 1e9 : 1e6);
+            s2Pool = weeklyPool(s2VolUsd);
+        }
+        const totalPts = INITIAL_PTS + s2Wks * s2Pool;
+        const share    = totalPts > 0 ? pts / totalPts : 0;
+        const myUsd    = pct => fdvUsd * (pct / 100) * share;
+        const hasFdv   = fdvUsd > 0;
+        const fdvLabel = '$' + fdvNum + (inputs.fdvUnit.value === 'billion' ? 'B' : 'M');
+
+        const W = 1200, H = 630;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#0B0A12';
+        ctx.fillRect(0, 0, W, H);
+        // Purple radial glow (top-right)
+        const g1 = ctx.createRadialGradient(W - 200, 120, 80, W - 200, 120, 600);
+        g1.addColorStop(0, 'rgba(123,63,228,0.30)');
+        g1.addColorStop(1, 'rgba(123,63,228,0)');
+        ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+        // Green glow (bottom-left)
+        const g2 = ctx.createRadialGradient(160, H - 100, 60, 160, H - 100, 400);
+        g2.addColorStop(0, 'rgba(61,220,132,0.14)');
+        g2.addColorStop(1, 'rgba(61,220,132,0)');
+        ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+        // Subtle top accent line
+        const lineGrad = ctx.createLinearGradient(0, 0, W, 0);
+        lineGrad.addColorStop(0, '#7B3FE4');
+        lineGrad.addColorStop(0.5, '#A67DFF');
+        lineGrad.addColorStop(1, '#C8A9FF');
+        ctx.fillStyle = lineGrad;
+        ctx.fillRect(0, 0, W, 3);
+
+        const F = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif";
+
+        // Header (logo block + title)
+        // Logo placeholder (square with paper-plane mark, matches the site's vibe)
+        ctx.fillStyle = '#13121E';
+        roundRect(ctx, 56, 56, 56, 56, 12); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5;
+        roundRect(ctx, 56, 56, 56, 56, 12); ctx.stroke();
+        // Mark (simple arrow)
+        ctx.fillStyle = '#A67DFF';
+        ctx.beginPath();
+        ctx.moveTo(76, 96); ctx.lineTo(95, 71); ctx.lineTo(95, 81);
+        ctx.lineTo(102, 75); ctx.lineTo(89, 89); ctx.lineTo(89, 79); ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `800 30px ${F}`;
+        ctx.textBaseline = 'top';
+        ctx.fillText('Nado', 134, 60);
+        ctx.fillStyle = '#6E6C85';
+        ctx.font = `800 12px ${F}`;
+        ctx.fillText('POINTS CALCULATOR', 134, 96);
+
+        // INK L2 pill
+        ctx.fillStyle = 'rgba(123,63,228,0.18)';
+        roundRect(ctx, 350, 70, 90, 30, 15); ctx.fill();
+        ctx.strokeStyle = 'rgba(123,63,228,0.4)'; ctx.lineWidth = 1;
+        roundRect(ctx, 350, 70, 90, 30, 15); ctx.stroke();
+        ctx.fillStyle = '#A67DFF';
+        ctx.font = `800 12px ${F}`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.fillText('INK L2', 395, 85);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+
+        // Headline
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `800 56px ${F}`;
+        ctx.fillText('My $INK airdrop projection', 56, 175);
+
+        // Subline
+        ctx.fillStyle = '#C0BDDA';
+        ctx.font = `600 20px ${F}`;
+        ctx.fillText(
+            hasFdv ? `Based on ${fmtInt(pts)} points · ${fdvLabel} FDV` :
+                     `Based on ${fmtInt(pts)} points`,
+            56, 245
+        );
+
+        // Three scenario cards
+        const scenarios = [
+            { label: 'BEAR',  pct: '3% airdrop',   value: hasFdv ? fmtUsd(myUsd(3))   : '—', color: '#C0BDDA' },
+            { label: 'BASE',  pct: '6.5% airdrop', value: hasFdv ? fmtUsd(myUsd(6.5)) : '—', color: '#A67DFF', highlight: true },
+            { label: 'BULL',  pct: '10% airdrop',  value: hasFdv ? fmtUsd(myUsd(10))  : '—', color: '#3DDC84' }
+        ];
+        const cardW = 350, cardH = 175, gap = 18;
+        const cardsW = cardW * 3 + gap * 2;
+        const startX = (W - cardsW) / 2;
+        const cardY  = 305;
+        scenarios.forEach((s, i) => {
+            const x = startX + i * (cardW + gap);
+            // Card bg
+            ctx.fillStyle = s.highlight ? 'rgba(123,63,228,0.14)' : '#13121E';
+            roundRect(ctx, x, cardY, cardW, cardH, 14); ctx.fill();
+            ctx.strokeStyle = s.highlight ? 'rgba(123,63,228,0.45)' : 'rgba(255,255,255,0.07)';
+            ctx.lineWidth = 1.5;
+            roundRect(ctx, x, cardY, cardW, cardH, 14); ctx.stroke();
+            // Label
+            ctx.fillStyle = '#6E6C85';
+            ctx.font = `800 13px ${F}`;
+            ctx.fillText(s.label, x + 24, cardY + 22);
+            // Pct
+            ctx.fillStyle = '#6E6C85';
+            ctx.font = `600 14px ${F}`;
+            ctx.fillText(s.pct, x + 24, cardY + 44);
+            // Value (large)
+            ctx.fillStyle = s.color;
+            ctx.font = `800 44px ${F}`;
+            ctx.fillText(s.value, x + 24, cardY + 90);
+        });
+
+        // Footer stats row
+        const footerY = 530;
+        ctx.fillStyle = '#6E6C85';
+        ctx.font = `700 12px ${F}`;
+        ctx.fillText('YOUR POINTS', 56, footerY);
+        ctx.fillText('YOUR SHARE',  340, footerY);
+        ctx.fillText('TOTAL POOL',  624, footerY);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `800 22px ${F}`;
+        ctx.fillText(fmtInt(pts), 56, footerY + 22);
+        ctx.fillText((share * 100).toFixed(4) + '%', 340, footerY + 22);
+        ctx.fillText(fmtCompact(totalPts, 2), 624, footerY + 22);
+
+        // Footer URL line
+        ctx.fillStyle = '#A67DFF';
+        ctx.font = `800 14px ${F}`;
+        ctx.fillText('nado-calculator.vercel.app', 56, H - 35);
+        // Author / framing
+        ctx.fillStyle = '#6E6C85';
+        ctx.font = `600 13px ${F}`;
+        const farmInfo = s2Wks > 0 ? `${s2Wks} weeks of S2 farming` : 'S2 farming';
+        const right = `${farmInfo} · community tool by @ProtocolRaider`;
+        ctx.textAlign = 'right';
+        ctx.fillText(right, W - 56, H - 34);
+        ctx.textAlign = 'left';
+
+        return canvas;
+    }
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y,     x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x,     y + h, r);
+        ctx.arcTo(x,     y + h, x,     y,     r);
+        ctx.arcTo(x,     y,     x + w, y,     r);
+        ctx.closePath();
+    }
+
+    $('png-btn').addEventListener('click', () => {
+        const pts = parseFloat(inputs.yourPoints.value) || 0;
+        if (pts <= 0) { showToast('Enter your points first'); return; }
+        const btn = $('png-btn');
+        btn.disabled = true;
+        try {
+            const canvas = buildResultsCanvas();
+            canvas.toBlob(blob => {
+                if (!blob) { showToast('Couldn\'t generate image'); btn.disabled = false; return; }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `nado-airdrop-${fmtInt(pts).replace(/,/g, '')}pts.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showToast('Image saved to downloads');
+                btn.disabled = false;
+            }, 'image/png');
+        } catch (e) {
+            showToast('Couldn\'t generate image');
+            btn.disabled = false;
+        }
     });
 
     /* ── Epoch countdown — epochs close every Friday at 01:00 UTC (verified against API end_time) ── */
