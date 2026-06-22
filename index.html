@@ -517,17 +517,31 @@
         .hiw-live-avg-dot {
             fill: var(--ink-purple-bright);
             stroke: #0B0A12; stroke-width: 1.6;
-            filter: drop-shadow(0 0 4px rgba(200,169,255,.5));
+            filter: drop-shadow(0 0 4px rgba(200,169,255,.55));
         }
         .hiw-live-avg-line {
             stroke: var(--ink-purple-bright); stroke-width: 1.2;
-            stroke-dasharray: 3 3; stroke-linecap: round; opacity: .65;
+            stroke-dasharray: 3 3; stroke-linecap: round; opacity: .55;
         }
-        .hiw-live-tag {
-            font-size: 8.5px; font-weight: 800; fill: var(--ink-purple-bright);
-            letter-spacing: .2px;
+
+        /* Chart legend (below the chart, identifies the two markers) */
+        .hiw-legend {
+            display: flex; justify-content: center; gap: 14px;
+            margin-top: 8px; flex-wrap: wrap;
         }
-        .hiw-live-tag-bg { fill: #1A1830; stroke: var(--ink-purple-border); stroke-width: .8; }
+        .hiw-legend-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 10px; font-weight: 600; color: var(--text-2);
+            white-space: nowrap;
+        }
+        .hiw-legend-chip[hidden] { display: none; }
+        .hiw-legend-chip .leg-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            border: 1.2px solid #0B0A12; flex-shrink: 0;
+        }
+        .hiw-legend-chip .leg-dot.user { background: var(--green); box-shadow: 0 0 0 2px rgba(61,220,132,.18); }
+        .hiw-legend-chip .leg-dot.avg  { background: var(--ink-purple-bright); box-shadow: 0 0 0 2px rgba(200,169,255,.18); }
+        .hiw-legend-chip strong { color: var(--text); font-weight: 800; font-variant-numeric: tabular-nums; }
 
         /* ── Live pool panel (real S2 pool average from API) ── */
         .live-pool-panel {
@@ -1029,6 +1043,11 @@
                                             <span>$0</span><span>$1B</span><span>$2B/day</span>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div class="hiw-legend" id="hiw-legend">
+                                    <span class="hiw-legend-chip" id="legend-avg"><span class="leg-dot avg"></span>Live S2 avg <strong id="legend-avg-val">—</strong></span>
+                                    <span class="hiw-legend-chip" id="legend-user" hidden><span class="leg-dot user"></span>Your projection <strong id="legend-user-val">—</strong></span>
                                 </div>
 
                                 <div class="hiw-readout" id="hiw-readout">
@@ -1552,7 +1571,8 @@
         if (typeof calculate === 'function') calculate();
     }
 
-    /* Live S2 average overlay on the "How it works" chart — single dot + dashed horizontal line + value tag */
+    /* Live S2 average overlay on the "How it works" chart — single dot + dashed horizontal line.
+       Value label lives in the chart legend below, not as a floating tag. */
     function renderRealPoolMarkers(_lastN) {
         const chart = $('hiw-chart');
         if (!chart) return;
@@ -1569,42 +1589,22 @@
         const x = volToX(volumeFromPool(liveAvgPool));
         const y = poolToY(liveAvgPool);
 
-        // Dashed horizontal line from left edge to the dot (where the avg sits on the curve)
+        // Dashed horizontal line from left edge to the dot
         const line = document.createElementNS(SVG_NS, 'line');
         line.setAttribute('x1', CX0);  line.setAttribute('y1', y);
         line.setAttribute('x2', x);    line.setAttribute('y2', y);
         line.setAttribute('class', 'hiw-live-avg-line');
         g.appendChild(line);
 
-        // Single dot at the avg point on the curve
+        // Dot at the live-avg's intersection with the curve
         const dot = document.createElementNS(SVG_NS, 'circle');
         dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '4.5');
         dot.setAttribute('class', 'hiw-live-avg-dot');
         g.appendChild(dot);
 
-        // Tag with value, positioned next to the dot (right side, falling back to left near edge)
-        const txt = fmtCompact(liveAvgPool, 0) + ' avg';
-        const tag = document.createElementNS(SVG_NS, 'text');
-        tag.setAttribute('class', 'hiw-live-tag');
-        tag.setAttribute('y', y + 3);
-        tag.textContent = txt;
-        // Decide placement: right of dot if there's room, otherwise left
-        const placeRight = x < 200;
-        tag.setAttribute('x', placeRight ? x + 9 : x - 9);
-        tag.setAttribute('text-anchor', placeRight ? 'start' : 'end');
-        // Background rect for legibility (rendered before text via insertBefore)
-        const padX = 4, padY = 2;
-        // Approximate width: 5.5px per char
-        const approxW = txt.length * 5.5 + padX * 2;
-        const bg = document.createElementNS(SVG_NS, 'rect');
-        bg.setAttribute('class', 'hiw-live-tag-bg');
-        bg.setAttribute('rx', 3); bg.setAttribute('ry', 3);
-        bg.setAttribute('width', approxW);
-        bg.setAttribute('height', 12);
-        bg.setAttribute('y', y - 6);
-        bg.setAttribute('x', placeRight ? x + 7 : x - 7 - approxW);
-        g.appendChild(bg);
-        g.appendChild(tag);
+        // Update legend label
+        const legAvgVal = $('legend-avg-val');
+        if (legAvgVal) legAvgVal.textContent = fmtCompact(liveAvgPool, 0);
     }
 
     const $ = id => document.getElementById(id);
@@ -1715,9 +1715,28 @@
 
         /* ── Volume meter + mini chart ── */
         updateVolMeter(s2VolUsd);
-        updateChartMarker(s2VolUsd, s2Pool);
-        $('hiw-readout-vol').textContent  = '$' + fmtCompact(s2VolUsd, s2VolUsd >= 1e9 ? 2 : 0) + '/day';
-        $('hiw-readout-pool').textContent = fmtInt(s2Pool) + ' pts';
+        // In Live mode the user marker would sit exactly on the live-avg dot — hide it to avoid overlap.
+        // In Custom mode the user picks their own volume, so the user marker is meaningful and shown.
+        const userMarkerVisible = poolMode === 'custom';
+        const userMarker = $('hiw-chart-marker'), userGuideV = $('hiw-chart-guide'), userGuideH = $('hiw-chart-guide-h');
+        if (userMarker)  userMarker.style.display  = userMarkerVisible ? '' : 'none';
+        if (userGuideV)  userGuideV.style.display  = userMarkerVisible ? '' : 'none';
+        if (userGuideH)  userGuideH.style.display  = userMarkerVisible ? '' : 'none';
+        if (userMarkerVisible) updateChartMarker(s2VolUsd, s2Pool);
+
+        // Legend below the chart — Live avg always shown; user projection only in Custom mode
+        const legendUser = $('legend-user'), legendUserVal = $('legend-user-val');
+        if (legendUser) legendUser.hidden = !userMarkerVisible;
+        if (legendUserVal) legendUserVal.textContent = fmtCompact(s2Pool, 0);
+
+        // Readout below the chart adapts to the current mode
+        if (poolMode === 'live') {
+            $('hiw-readout-vol').textContent  = '~$' + fmtCompact(s2VolUsd, s2VolUsd >= 1e9 ? 2 : 0) + '/day';
+            $('hiw-readout-pool').textContent = fmtInt(s2Pool) + ' pts';
+        } else {
+            $('hiw-readout-vol').textContent  = '$' + fmtCompact(s2VolUsd, s2VolUsd >= 1e9 ? 2 : 0) + '/day';
+            $('hiw-readout-pool').textContent = fmtInt(s2Pool) + ' pts';
+        }
 
         /* ── Supply donut ── */
         // Donut: amber=Reserved, purple=Distributed, green=S2 (id mapping unchanged)
