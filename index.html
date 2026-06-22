@@ -1971,13 +1971,14 @@
         window.open(url, '_blank', 'noopener,width=600,height=500');
     });
 
-    /* ── Epoch countdown (next Thursday close, UTC) ── */
+    /* ── Epoch countdown — epochs close every Friday at 01:00 UTC (verified against API end_time) ── */
     function nextEpochClose() {
         const now = new Date();
-        const day = now.getUTCDay();           // 0 Sun … 4 Thu … 6 Sat
-        let add = (4 - day + 7) % 7;
-        if (add === 0) add = 7;                // if today is Thursday, target next one
-        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + add, 0, 0, 0));
+        const day = now.getUTCDay();           // 0 Sun … 5 Fri … 6 Sat
+        let add = (5 - day + 7) % 7;
+        // If today is Friday but already past 01:00 UTC, target next Friday
+        if (add === 0 && now.getUTCHours() >= 1) add = 7;
+        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + add, 1, 0, 0));
     }
     function tickCountdown() {
         const diff = nextEpochClose() - new Date();
