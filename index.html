@@ -513,6 +513,34 @@
         }
         .hiw-grid { stroke: rgba(255,255,255,.06); stroke-width: 1; }
         .hiw-chart-guide-h { stroke: rgba(61,220,132,.4); stroke-width: 1; stroke-dasharray: 3 3; transition: y1 .35s, y2 .35s; }
+        .hiw-real-marker { fill: rgba(61,220,132,.75); stroke: #0B0A12; stroke-width: 1; }
+        .hiw-real-marker.avg { fill: var(--green); stroke: #0B0A12; stroke-width: 1.5; r: 4; }
+        .hiw-real-label { font-size: 9px; fill: var(--text-muted); font-weight: 600; }
+
+        /* ── Live pool panel (real S2 pool average from API) ── */
+        .live-pool-panel {
+            padding: 14px;
+            background: linear-gradient(135deg, rgba(61,220,132,0.06), rgba(123,63,228,0.05));
+            border: 1px solid var(--green-border);
+            border-radius: 10px;
+        }
+        .live-pool-headline { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 3px; }
+        .live-pool-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; display: inline-flex; align-items: center; gap: 6px; }
+        .live-pool-label .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s infinite; }
+        .live-pool-avg { font-size: 22px; font-weight: 800; color: var(--green); letter-spacing: -.3px; font-variant-numeric: tabular-nums; }
+        .live-pool-sub { font-size: 10px; color: var(--text-muted); margin-bottom: 10px; }
+        .live-pool-sub strong { color: var(--text-2); font-weight: 700; }
+        .live-pool-mini { display: flex; gap: 4px; }
+        .live-pool-week {
+            flex: 1; padding: 6px 4px;
+            background: rgba(11,10,18,.45); border: 1px solid var(--border);
+            border-radius: 7px; text-align: center;
+        }
+        .live-pool-week .lpw-label { font-size: 9px; color: var(--text-muted); font-weight: 600; letter-spacing: .2px; }
+        .live-pool-week .lpw-val { font-size: 11px; font-weight: 800; color: var(--text-2); margin-top: 2px; font-variant-numeric: tabular-nums; }
+        .live-pool-loading { color: var(--ink-purple-light); font-size: 11px; text-align: center; padding: 24px 0; font-weight: 600; }
+        .live-pool-error { font-size: 11px; color: var(--amber); text-align: center; padding: 12px 0; line-height: 1.5; }
+        .live-pool-error a { color: var(--amber); text-decoration: underline; cursor: pointer; }
 
         /* ── Epoch countdown badge ── */
         .epoch-badge {
@@ -942,7 +970,7 @@
                     <div class="field">
                         <div class="hiw-popover-wrap">
                             <div class="field-label" style="font-size:11px;">
-                                Daily Avg Volume
+                                S2 Weekly Pool
                                 <button class="hiw-btn" id="hiw-btn" type="button">
                                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                                         <circle cx="5" cy="5" r="4.5" stroke="currentColor" stroke-opacity=".8"/>
@@ -1006,29 +1034,58 @@
                             </div>
                         </div>
 
-                        <div class="input-wrap">
-                            <span style="font-size:15px;font-weight:700;color:var(--text-muted);flex-shrink:0;">$</span>
-                            <input type="number" id="s2-volume" value="500" min="0" step="1" placeholder="500">
-                            <select class="select-unit" id="s2-volume-unit">
-                                <option value="billion">Billion</option>
-                                <option value="million" selected>Million</option>
-                            </select>
+                        <!-- Live / Custom toggle -->
+                        <div class="mode-toggle" id="pool-mode">
+                            <button class="mode-btn active" type="button" data-mode="live">
+                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2.2" fill="currentColor"/><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1" opacity=".5"/></svg>
+                                Live (from API)
+                            </button>
+                            <button class="mode-btn" type="button" data-mode="custom">
+                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 9.5h8M3 7l4.5-4.5a1 1 0 0 1 1.5 1.5L4.5 8.5 2.5 9l.5-2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+                                Custom estimate
+                            </button>
                         </div>
 
-                        <!-- Volume meter -->
-                        <div class="vol-meter">
-                            <div class="vol-meter-track" id="vol-meter-track">
-                                <div class="vol-meter-fill" id="vol-meter-fill" style="width:25%;"></div>
-                                <div class="vol-meter-thumb" id="vol-meter-thumb" style="left:25%;"></div>
+                        <!-- Live mode: real S2 pools averaged from API -->
+                        <div id="live-mode" class="live-pool-panel">
+                            <div class="live-pool-loading" id="live-loading">Fetching latest pools…</div>
+                            <div id="live-content" hidden>
+                                <div class="live-pool-headline">
+                                    <span class="live-pool-label"><span class="live-dot"></span>Weekly pool · live avg</span>
+                                    <span class="live-pool-avg" id="live-pool-avg">—</span>
+                                </div>
+                                <div class="live-pool-sub" id="live-pool-sub">Average of the last <strong id="live-pool-n">—</strong> completed S2 epochs</div>
+                                <div class="live-pool-mini" id="live-pool-mini"></div>
                             </div>
-                            <div class="vol-meter-scale">
-                                <span>$0</span><span>$500M</span><span>$1B</span><span>$1.5B</span><span>$2B+</span>
-                            </div>
+                            <div class="live-pool-error" id="live-error" hidden></div>
                         </div>
 
-                        <div class="computed-total" style="margin-top:10px;background:rgba(61,220,132,0.06);border-color:rgba(61,220,132,0.2);">
-                            <span class="computed-total-label">Weekly Pool</span>
-                            <span class="computed-total-value" id="s2-weekly-pool" style="color:var(--green);">381,000 pts</span>
+                        <!-- Custom mode: user-estimated volume -->
+                        <div id="custom-mode" hidden>
+                            <div class="input-wrap">
+                                <span style="font-size:15px;font-weight:700;color:var(--text-muted);flex-shrink:0;">$</span>
+                                <input type="number" id="s2-volume" value="500" min="0" step="1" placeholder="500">
+                                <select class="select-unit" id="s2-volume-unit">
+                                    <option value="billion">Billion</option>
+                                    <option value="million" selected>Million</option>
+                                </select>
+                            </div>
+
+                            <!-- Volume meter -->
+                            <div class="vol-meter">
+                                <div class="vol-meter-track" id="vol-meter-track">
+                                    <div class="vol-meter-fill" id="vol-meter-fill" style="width:25%;"></div>
+                                    <div class="vol-meter-thumb" id="vol-meter-thumb" style="left:25%;"></div>
+                                </div>
+                                <div class="vol-meter-scale">
+                                    <span>$0</span><span>$500M</span><span>$1B</span><span>$1.5B</span><span>$2B+</span>
+                                </div>
+                            </div>
+
+                            <div class="computed-total" style="margin-top:10px;background:rgba(61,220,132,0.06);border-color:rgba(61,220,132,0.2);">
+                                <span class="computed-total-label">Weekly Pool</span>
+                                <span class="computed-total-value" id="s2-weekly-pool" style="color:var(--green);">381,000 pts</span>
+                            </div>
                         </div>
 
                         <div class="field" style="margin-top:12px;">
@@ -1374,6 +1431,143 @@
         return 300_000;
     }
 
+    /* Inverse of weeklyPool: given a pool size, find the volume on the theoretical curve */
+    function volumeFromPool(p) {
+        const last = VOLUME_CURVE.length - 1;
+        if (p <= VOLUME_CURVE[0][1])    return VOLUME_CURVE[0][0];
+        if (p >= VOLUME_CURVE[last][1]) return VOLUME_CURVE[last][0];
+        for (let i = 1; i < VOLUME_CURVE.length; i++) {
+            const [v0, p0] = VOLUME_CURVE[i - 1];
+            const [v1, p1] = VOLUME_CURVE[i];
+            if (p >= p0 && p <= p1) {
+                const t = (p - p0) / (p1 - p0);
+                return v0 + t * (v1 - v0);
+            }
+        }
+        return VOLUME_CURVE[0][0];
+    }
+
+    /* ── Live S2 pool data (from Nado API) ── */
+    const LIVE_CACHE_KEY = 'nado-calc-live-pools-v1';
+    const LIVE_CACHE_TTL = 60 * 60 * 1000; // 1h
+    const LIVE_AVG_WINDOW = 4;             // average of last N completed S2 epochs
+    let livePoolsData = null;              // full list of S2 epochs with real pools
+    let liveAvgPool   = null;              // rounded average of last N completed
+    let poolMode      = 'live';            // 'live' | 'custom'
+
+    async function fetchLivePools() {
+        // Cache first
+        try {
+            const raw = localStorage.getItem(LIVE_CACHE_KEY);
+            if (raw) {
+                const c = JSON.parse(raw);
+                if (c && c.timestamp > Date.now() - LIVE_CACHE_TTL && Array.isArray(c.data)) return c.data;
+            }
+        } catch (_) {}
+
+        const res = await fetch('https://archive.prod.nado.xyz/v1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nado_points: { address: '0x0000000000000000000000000000000000000000' } })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const epochs = Array.isArray(data.points_per_epoch) ? data.points_per_epoch : [];
+        const SCALE  = 10n ** 18n;
+        const s2Start = S2_START.getTime();
+        const s2 = epochs
+            .filter(e => Number(e.start_time) * 1000 >= s2Start)
+            .map(e => {
+                let pts = 0n;
+                try { pts = BigInt(e.total_points || '0'); } catch (_) {}
+                return {
+                    epoch:   e.epoch,
+                    label:   e.description || ('Epoch ' + e.epoch),
+                    pool:    Number(pts / SCALE),
+                    startMs: Number(e.start_time) * 1000,
+                    endMs:   Number(e.end_time)   * 1000
+                };
+            });
+        try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: s2 })); } catch (_) {}
+        return s2;
+    }
+
+    function computeLiveAvg(pools) {
+        if (!Array.isArray(pools)) return null;
+        const completed = pools.filter(p => p.pool > 0);
+        if (completed.length === 0) return null;
+        const last = completed.slice(-LIVE_AVG_WINDOW);
+        const sum  = last.reduce((a, p) => a + p.pool, 0);
+        return Math.round(sum / last.length);
+    }
+
+    function renderLivePanel(pools) {
+        livePoolsData = pools;
+        liveAvgPool   = computeLiveAvg(pools);
+        const loading = $('live-loading'), content = $('live-content'), err = $('live-error');
+        if (loading) loading.hidden = true;
+        if (!liveAvgPool) {
+            if (content) content.hidden = true;
+            if (err)     { err.hidden = false; err.textContent = 'No completed S2 epochs yet — switch to Custom.'; }
+            return;
+        }
+        if (err) err.hidden = true;
+        if (content) content.hidden = false;
+        $('live-pool-avg').textContent = fmtInt(liveAvgPool) + ' pts';
+        const lastN = pools.filter(p => p.pool > 0).slice(-LIVE_AVG_WINDOW);
+        $('live-pool-n').textContent = lastN.length;
+        $('live-pool-mini').innerHTML = lastN.map(p => {
+            const label = (p.label || '').replace(/^Week\s*/i, 'W');
+            return '<div class="live-pool-week"><div class="lpw-label">' + label +
+                '</div><div class="lpw-val">' + fmtCompact(p.pool, 0) + '</div></div>';
+        }).join('');
+        renderRealPoolMarkers(lastN);
+    }
+
+    function showLiveError(msg) {
+        const loading = $('live-loading'), content = $('live-content'), err = $('live-error');
+        if (loading) loading.hidden = true;
+        if (content) content.hidden = true;
+        if (err) { err.hidden = false; err.innerHTML = msg; }
+    }
+
+    function setPoolMode(mode) {
+        poolMode = mode === 'custom' ? 'custom' : 'live';
+        const liveBox = $('live-mode'), custBox = $('custom-mode'), toggle = $('pool-mode');
+        if (liveBox)  liveBox.style.display = poolMode === 'live'  ? '' : 'none';
+        if (custBox)  custBox.hidden        = poolMode !== 'custom';
+        if (toggle) toggle.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === poolMode));
+        if (typeof calculate === 'function') calculate();
+    }
+
+    /* Real S2 pool markers on the "How it works" chart */
+    function renderRealPoolMarkers(lastN) {
+        const chart = $('hiw-chart');
+        if (!chart) return;
+        let g = chart.querySelector('#hiw-real-group');
+        if (!g) {
+            g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('id', 'hiw-real-group');
+            chart.appendChild(g);
+        }
+        g.innerHTML = '';
+        if (!lastN || !lastN.length) return;
+        lastN.forEach(p => {
+            const x = volToX(volumeFromPool(p.pool)), y = poolToY(p.pool);
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', '2.8');
+            c.setAttribute('class', 'hiw-real-marker');
+            g.appendChild(c);
+        });
+        if (liveAvgPool != null) {
+            const x = volToX(volumeFromPool(liveAvgPool)), y = poolToY(liveAvgPool);
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', '4');
+            c.setAttribute('class', 'hiw-real-marker avg');
+            g.appendChild(c);
+        }
+    }
+
     const $ = id => document.getElementById(id);
 
     const inputs = {
@@ -1446,9 +1640,15 @@
         const fdvVal     = Math.max(0, parseFloat(inputs.fdv.value)           || 0);
         const fdvUnit    = inputs.fdvUnit.value;
 
-        /* S2 volume & weekly pool */
-        const s2VolUsd = s2Vol * (s2VolUnit === 'billion' ? 1e9 : 1e6);
-        const s2Pool   = weeklyPool(s2VolUsd);
+        /* S2 weekly pool — live (average of recent real epochs) OR custom (curve from volume input) */
+        let s2VolUsd, s2Pool;
+        if (poolMode === 'live' && liveAvgPool != null) {
+            s2Pool   = liveAvgPool;
+            s2VolUsd = volumeFromPool(s2Pool); // for chart marker positioning only
+        } else {
+            s2VolUsd = s2Vol * (s2VolUnit === 'billion' ? 1e9 : 1e6);
+            s2Pool   = weeklyPool(s2VolUsd);
+        }
 
         /* Total points = Distributed + Reserved + S2 */
         const totalPoints = INITIAL_PTS + s2Weeks * s2Pool;
@@ -2005,6 +2205,36 @@
     applyDefaults();
     loadFromUrl(); // URL params override defaults if present
     calculate();
+
+    /* ── Live S2 pool: toggle wiring + boot fetch ── */
+    (function setupPoolToggle() {
+        const toggle = $('pool-mode');
+        if (!toggle) return;
+        toggle.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => setPoolMode(btn.dataset.mode));
+        });
+    })();
+
+    (async function bootLivePools() {
+        // Start in Live mode visually (loading state shown via HTML default)
+        try {
+            const pools = await fetchLivePools();
+            renderLivePanel(pools);
+            // If we successfully landed a live average, recalc so totals use it
+            if (liveAvgPool != null && poolMode === 'live') calculate();
+            else if (liveAvgPool == null) {
+                // No completed S2 epochs yet — fall back to custom
+                setPoolMode('custom');
+            }
+        } catch (err) {
+            showLiveError(
+                "Couldn't reach Nado API. " +
+                '<a id="live-switch-custom">Use custom estimate instead →</a>'
+            );
+            const link = document.getElementById('live-switch-custom');
+            if (link) link.addEventListener('click', () => setPoolMode('custom'));
+        }
+    })();
 </script>
 
 </body>
