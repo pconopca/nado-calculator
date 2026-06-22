@@ -513,9 +513,21 @@
         }
         .hiw-grid { stroke: rgba(255,255,255,.06); stroke-width: 1; }
         .hiw-chart-guide-h { stroke: rgba(61,220,132,.4); stroke-width: 1; stroke-dasharray: 3 3; transition: y1 .35s, y2 .35s; }
-        .hiw-real-marker { fill: rgba(61,220,132,.75); stroke: #0B0A12; stroke-width: 1; }
-        .hiw-real-marker.avg { fill: var(--green); stroke: #0B0A12; stroke-width: 1.5; r: 4; }
-        .hiw-real-label { font-size: 9px; fill: var(--text-muted); font-weight: 600; }
+        /* Live S2 average marker on the theoretical curve (anchor for calibration) */
+        .hiw-live-avg-dot {
+            fill: var(--ink-purple-bright);
+            stroke: #0B0A12; stroke-width: 1.6;
+            filter: drop-shadow(0 0 4px rgba(200,169,255,.5));
+        }
+        .hiw-live-avg-line {
+            stroke: var(--ink-purple-bright); stroke-width: 1.2;
+            stroke-dasharray: 3 3; stroke-linecap: round; opacity: .65;
+        }
+        .hiw-live-tag {
+            font-size: 8.5px; font-weight: 800; fill: var(--ink-purple-bright);
+            letter-spacing: .2px;
+        }
+        .hiw-live-tag-bg { fill: #1A1830; stroke: var(--ink-purple-border); stroke-width: .8; }
 
         /* ── Live pool panel (real S2 pool average from API) ── */
         .live-pool-panel {
@@ -1540,8 +1552,8 @@
         if (typeof calculate === 'function') calculate();
     }
 
-    /* Real S2 pool markers on the "How it works" chart */
-    function renderRealPoolMarkers(lastN) {
+    /* Live S2 average overlay on the "How it works" chart — single dot + dashed horizontal line + value tag */
+    function renderRealPoolMarkers(_lastN) {
         const chart = $('hiw-chart');
         if (!chart) return;
         let g = chart.querySelector('#hiw-real-group');
@@ -1551,21 +1563,48 @@
             chart.appendChild(g);
         }
         g.innerHTML = '';
-        if (!lastN || !lastN.length) return;
-        lastN.forEach(p => {
-            const x = volToX(volumeFromPool(p.pool)), y = poolToY(p.pool);
-            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', '2.8');
-            c.setAttribute('class', 'hiw-real-marker');
-            g.appendChild(c);
-        });
-        if (liveAvgPool != null) {
-            const x = volToX(volumeFromPool(liveAvgPool)), y = poolToY(liveAvgPool);
-            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', '4');
-            c.setAttribute('class', 'hiw-real-marker avg');
-            g.appendChild(c);
-        }
+        if (liveAvgPool == null) return;
+
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+        const x = volToX(volumeFromPool(liveAvgPool));
+        const y = poolToY(liveAvgPool);
+
+        // Dashed horizontal line from left edge to the dot (where the avg sits on the curve)
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', CX0);  line.setAttribute('y1', y);
+        line.setAttribute('x2', x);    line.setAttribute('y2', y);
+        line.setAttribute('class', 'hiw-live-avg-line');
+        g.appendChild(line);
+
+        // Single dot at the avg point on the curve
+        const dot = document.createElementNS(SVG_NS, 'circle');
+        dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '4.5');
+        dot.setAttribute('class', 'hiw-live-avg-dot');
+        g.appendChild(dot);
+
+        // Tag with value, positioned next to the dot (right side, falling back to left near edge)
+        const txt = fmtCompact(liveAvgPool, 0) + ' avg';
+        const tag = document.createElementNS(SVG_NS, 'text');
+        tag.setAttribute('class', 'hiw-live-tag');
+        tag.setAttribute('y', y + 3);
+        tag.textContent = txt;
+        // Decide placement: right of dot if there's room, otherwise left
+        const placeRight = x < 200;
+        tag.setAttribute('x', placeRight ? x + 9 : x - 9);
+        tag.setAttribute('text-anchor', placeRight ? 'start' : 'end');
+        // Background rect for legibility (rendered before text via insertBefore)
+        const padX = 4, padY = 2;
+        // Approximate width: 5.5px per char
+        const approxW = txt.length * 5.5 + padX * 2;
+        const bg = document.createElementNS(SVG_NS, 'rect');
+        bg.setAttribute('class', 'hiw-live-tag-bg');
+        bg.setAttribute('rx', 3); bg.setAttribute('ry', 3);
+        bg.setAttribute('width', approxW);
+        bg.setAttribute('height', 12);
+        bg.setAttribute('y', y - 6);
+        bg.setAttribute('x', placeRight ? x + 7 : x - 7 - approxW);
+        g.appendChild(bg);
+        g.appendChild(tag);
     }
 
     const $ = id => document.getElementById(id);
