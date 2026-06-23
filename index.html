@@ -2294,37 +2294,25 @@
 
         const F = "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif";
 
-        // Header (logo block + title)
-        // Logo placeholder (square with paper-plane mark, matches the site's vibe)
-        ctx.fillStyle = '#13121E';
-        roundRect(ctx, 56, 56, 56, 56, 12); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5;
-        roundRect(ctx, 56, 56, 56, 56, 12); ctx.stroke();
-        // Mark (simple arrow)
-        ctx.fillStyle = '#A67DFF';
-        ctx.beginPath();
-        ctx.moveTo(76, 96); ctx.lineTo(95, 71); ctx.lineTo(95, 81);
-        ctx.lineTo(102, 75); ctx.lineTo(89, 89); ctx.lineTo(89, 79); ctx.closePath();
-        ctx.fill();
-
+        // Header — text wordmark + INK L2 pill (no logo)
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `800 30px ${F}`;
+        ctx.font = `800 32px ${F}`;
         ctx.textBaseline = 'top';
-        ctx.fillText('Nado', 134, 60);
+        ctx.fillText('Nado', 56, 60);
         ctx.fillStyle = '#6E6C85';
-        ctx.font = `800 12px ${F}`;
-        ctx.fillText('POINTS CALCULATOR', 134, 96);
+        ctx.font = `800 13px ${F}`;
+        ctx.fillText('POINTS CALCULATOR', 56, 100);
 
-        // INK L2 pill
+        // INK L2 pill (placed right after "Nado", vertically aligned)
         ctx.fillStyle = 'rgba(123,63,228,0.18)';
-        roundRect(ctx, 350, 70, 90, 30, 15); ctx.fill();
+        roundRect(ctx, 158, 67, 88, 30, 15); ctx.fill();
         ctx.strokeStyle = 'rgba(123,63,228,0.4)'; ctx.lineWidth = 1;
-        roundRect(ctx, 350, 70, 90, 30, 15); ctx.stroke();
+        roundRect(ctx, 158, 67, 88, 30, 15); ctx.stroke();
         ctx.fillStyle = '#A67DFF';
         ctx.font = `800 12px ${F}`;
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
-        ctx.fillText('INK L2', 395, 85);
+        ctx.fillText('INK L2', 202, 82);
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
 
