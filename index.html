@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nado Points Calculator — $INK Airdrop</title>
-    <meta name="description" content="Estimate your $INK airdrop from your Nado trading points. Track your wallet on-chain (.eth / .ink) and compare Bear / Base / Bull scenarios.">
+    <meta name="description" content="Estimate your $INK airdrop from your Nado trading points. Live on-chain calibration, wallet tracking (.eth / .ink), and shareable results.">
     <link rel="icon" type="image/png" href="idV9Yho-DA_logos.png">
     <link rel="apple-touch-icon" href="idV9Yho-DA_logos.png">
 
@@ -12,7 +12,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nadocalc.xyz/">
     <meta property="og:title" content="Nado Points Calculator — $INK Airdrop">
-    <meta property="og:description" content="Estimate your $INK airdrop from your Nado trading points. Track your wallet on-chain (.eth / .ink) and compare Bear / Base / Bull scenarios.">
+    <meta property="og:description" content="Estimate your $INK airdrop from your Nado trading points. Live on-chain calibration, wallet tracking (.eth / .ink), and shareable results.">
     <meta property="og:image" content="https://nadocalc.xyz/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -20,11 +20,15 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Nado Points Calculator — $INK Airdrop">
-    <meta name="twitter:description" content="Estimate your $INK airdrop from your Nado trading points. Track your wallet on-chain (.eth / .ink) and compare Bear / Base / Bull scenarios.">
+    <meta name="twitter:description" content="Estimate your $INK airdrop from your Nado trading points. Live on-chain calibration, wallet tracking (.eth / .ink), and shareable results.">
     <meta name="twitter:image" content="https://nadocalc.xyz/og-image.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Privacy-friendly analytics (no cookies, no cross-site tracking). Requires a Plausible
+         account for nadocalc.xyz — see plausible.io. Script is inert until that account exists. -->
+    <script defer data-domain="nadocalc.xyz" src="https://plausible.io/js/script.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -741,6 +745,35 @@
         }
         .wh-forget:hover { color: var(--amber); }
 
+        /* ── Points forecast (project forward at recent pace) ── */
+        .wallet-forecast {
+            margin-top: 14px; padding: 14px;
+            background: linear-gradient(135deg, rgba(123,63,228,0.08), rgba(61,220,132,0.05));
+            border: 1px solid var(--ink-purple-border);
+            border-radius: 10px;
+        }
+        .wf-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+        .wf-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-2); }
+        .wf-pace { font-size:11px; font-weight:700; color:var(--ink-purple-light); }
+        .wf-controls { display:flex; align-items:center; gap:8px; margin-bottom:11px; }
+        .wf-controls label { font-size:12px; color:var(--text-muted); font-weight:600; }
+        .wf-controls input[type="number"] {
+            width:56px; background:var(--input-bg); border:1px solid var(--border); border-radius:7px;
+            color:var(--text); font-family:inherit; font-size:13px; font-weight:700; padding:6px 4px; text-align:center;
+        }
+        .wf-controls input[type="number"]:focus { outline:none; border-color:var(--ink-purple); }
+        .wf-controls .wf-unit { font-size:12px; color:var(--text-muted); font-weight:600; }
+        .wf-result { font-size:12.5px; color:var(--text-2); line-height:1.7; margin-bottom:10px; }
+        .wf-result strong { color:var(--text); font-weight:800; }
+        .wf-result .wf-range { color:var(--green); font-weight:700; }
+        .wf-apply {
+            width:100%; padding:9px 14px; border-radius:8px; cursor:pointer;
+            background: var(--ink-purple-dim); border:1px solid var(--ink-purple-border); color:var(--ink-purple-light);
+            font-family:inherit; font-size:12px; font-weight:800; transition: background .15s;
+        }
+        .wf-apply:hover { background: rgba(123,63,228,.22); }
+        .wf-note { font-size:10px; color:var(--text-muted); margin-top:9px; line-height:1.5; }
+
         /* ── Preset chips ── */
         .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
         .preset-chip {
@@ -891,12 +924,17 @@
                 </div>
                 <span class="logo-badge">Ink L2</span>
             </a>
-            <a href="https://app.nado.xyz?join=ivsh5fv" target="_blank" class="header-link">
-                Trade on Nado
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                    <path d="M2 9L9 2M9 2H4M9 2V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </a>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <a href="/about.html" class="header-link" style="border-color:transparent; padding:8px 10px;">
+                    Methodology
+                </a>
+                <a href="https://app.nado.xyz?join=ivsh5fv" target="_blank" class="header-link">
+                    Trade on Nado
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                        <path d="M2 9L9 2M9 2H4M9 2V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+            </div>
         </div>
     </div>
 </header>
@@ -1008,6 +1046,22 @@
                                     <div class="wh-tt-arrow"></div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Points forecast: project forward at your recent earn pace -->
+                        <div class="wallet-forecast" id="wallet-forecast" hidden>
+                            <div class="wf-header">
+                                <span class="wf-title">📈 Points Forecast</span>
+                                <span class="wf-pace" id="wf-pace">—</span>
+                            </div>
+                            <div class="wf-controls">
+                                <label for="wf-weeks">Project forward</label>
+                                <input type="number" id="wf-weeks" min="1" max="52" value="8">
+                                <span class="wf-unit">weeks</span>
+                            </div>
+                            <div class="wf-result" id="wf-result"></div>
+                            <button class="wf-apply" id="wf-apply" type="button" hidden>Use forecasted points in calculator ↓</button>
+                            <div class="wf-note">Naive projection assuming your recent pace continues — actual results depend on your future trading volume.</div>
                         </div>
                     </div>
 
@@ -1446,7 +1500,7 @@
             </a>
         </div>
         <div class="footer-text">
-            Community tool · Built for <a href="https://app.nado.xyz?join=ivsh5fv" target="_blank">Nado</a> traders on <a href="https://inkonchain.com" target="_blank">Ink L2</a>
+            Community tool · Built for <a href="https://app.nado.xyz?join=ivsh5fv" target="_blank">Nado</a> traders on <a href="https://inkonchain.com" target="_blank">Ink L2</a> · <a href="/about.html">Methodology &amp; data sources</a>
         </div>
         <div class="footer-disclaimer">
             Unofficial community tool. All figures are estimates based on publicly available information. Airdrop % and $INK total supply have not been officially confirmed. Not financial advice.<br>
@@ -1510,16 +1564,24 @@
 
     /* ── Live S2 pool data (from Nado API) ── */
     const LIVE_CACHE_KEY = 'nado-calc-live-pools-v1';
-    const LIVE_CACHE_TTL = 60 * 60 * 1000; // 1h
+    const LIVE_CACHE_TTL = 15 * 60 * 1000; // 15 min freshness within the same epoch window
     const LIVE_AVG_WINDOW = 4;             // average of last N completed S2 epochs
     let livePoolsData = null;              // full list of S2 epochs with real pools
     let liveAvgPool   = null;              // rounded average of last N completed
     let poolMode      = 'live';            // 'live' | 'custom'
 
+    // Cache key is scoped to the current epoch boundary (next Friday 01:00 UTC close) so it
+    // self-invalidates the instant a new epoch closes — no waiting out a stale TTL right after
+    // an epoch just ended, which used to leave up to 1h of stale data visible.
+    function liveCacheKey() {
+        return LIVE_CACHE_KEY + ':' + nextEpochClose().toISOString();
+    }
+
     async function fetchLivePools() {
+        const cacheKey = liveCacheKey();
         // Cache first
         try {
-            const raw = localStorage.getItem(LIVE_CACHE_KEY);
+            const raw = localStorage.getItem(cacheKey);
             if (raw) {
                 const c = JSON.parse(raw);
                 if (c && c.timestamp > Date.now() - LIVE_CACHE_TTL && Array.isArray(c.data)) return c.data;
@@ -1549,7 +1611,14 @@
                     endMs:   Number(e.end_time)   * 1000
                 };
             });
-        try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: s2 })); } catch (_) {}
+        try {
+            localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: s2 }));
+            // Sweep stale entries from previous epoch windows so localStorage doesn't accumulate.
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.indexOf(LIVE_CACHE_KEY + ':') === 0 && k !== cacheKey) localStorage.removeItem(k);
+            }
+        } catch (_) {}
         return s2;
     }
 
@@ -1974,6 +2043,96 @@
 
         function resetHistory() { if (historyEl) historyEl.hidden = true; }
 
+        /* ── Points forecast: project forward at the wallet's recent S2 earn pace ── */
+        const WEEKLY_PACE_WINDOW = 4;
+        const forecastEl = $('wallet-forecast');
+
+        // Average points/epoch over the last N *active* Season 2 epochs (excludes Alpha/Off-Season
+        // one-time drops, which would badly skew a "weekly pace" figure).
+        function computeWeeklyPace(epochs) {
+            const s2StartMs = S2_START.getTime();
+            const s2Active = epochs
+                .filter(e => Number(e.start_time) * 1000 >= s2StartMs)
+                .map(e => { let p = 0n; try { p = BigInt(e.points || '0'); } catch (_) {} return Number(p / SCALE); })
+                .filter(p => p > 0);
+            if (s2Active.length === 0) return null;
+            const last = s2Active.slice(-WEEKLY_PACE_WINDOW);
+            return { avgPace: Math.round(last.reduce((a, b) => a + b, 0) / last.length), sampleCount: last.length };
+        }
+
+        function defaultForecastWeeks() {
+            const s2Wks = Math.max(0, parseFloat(inputs.s2Weeks.value) || 0);
+            if (s2Wks > 0) {
+                const farmEndMs = S2_START.getTime() + (s2Wks * 7 - 1) * 24 * 60 * 60 * 1000;
+                const remaining = Math.ceil((farmEndMs - Date.now()) / (7 * 24 * 60 * 60 * 1000));
+                if (remaining > 0) return Math.min(52, remaining);
+            }
+            return 8;
+        }
+
+        function renderForecast(epochs, currentPts) {
+            if (!forecastEl) return;
+            const pace = computeWeeklyPace(epochs);
+            if (!pace) { forecastEl.hidden = true; return; }
+            forecastEl.hidden = false;
+            $('wf-pace').textContent = '~' + fmtInt(pace.avgPace) + ' pts/week';
+            $('wf-weeks').value = defaultForecastWeeks();
+
+            function update() {
+                const weeks = Math.max(1, Math.min(104, parseFloat($('wf-weeks').value) || 8));
+                const forecastPts = Math.round(currentPts + pace.avgPace * weeks);
+                const gain = forecastPts - currentPts;
+
+                // Value the forecast against the *current* total pool assumption (live or custom),
+                // same math the main calculator uses — just with the forecasted point count.
+                const fdvVal  = Math.max(0, parseFloat(inputs.fdv.value) || 0);
+                const fdvUsd  = fdvVal * (inputs.fdvUnit.value === 'billion' ? 1e9 : 1e6);
+                const s2Wks   = Math.max(0, parseFloat(inputs.s2Weeks.value) || 0);
+                let s2Pool;
+                if (poolMode === 'live' && liveAvgPool != null) {
+                    s2Pool = liveAvgPool;
+                } else {
+                    const sv    = Math.max(0, parseFloat(inputs.s2Volume.value) || 0);
+                    const svUsd = sv * (inputs.s2VolumeUnit.value === 'billion' ? 1e9 : 1e6);
+                    s2Pool = weeklyPool(svUsd);
+                }
+                const totalPts = INITIAL_PTS + s2Wks * s2Pool;
+                const shareAt  = totalPts > 0 ? forecastPts / totalPts : 0;
+                const valAt    = pct => fdvUsd * (pct / 100) * shareAt;
+
+                let html = '≈ <strong>' + fmtInt(forecastPts) + ' points</strong> in ' + weeks + ' week' + (weeks === 1 ? '' : 's') +
+                    ' <span style="color:var(--text-muted)">(+' + fmtInt(gain) + ' from today)</span>';
+                if (fdvUsd > 0 && totalPts > 0) {
+                    html += '<br>≈ <span class="wf-range">' + fmtUsd(valAt(3)) + ' – ' + fmtUsd(valAt(10)) +
+                        '</span> at a 3–10% airdrop';
+                }
+                $('wf-result').innerHTML = html;
+                const applyBtn = $('wf-apply');
+                applyBtn.hidden = false;
+                applyBtn.dataset.forecastPts = String(forecastPts);
+            }
+            update();
+            $('wf-weeks').oninput = update;
+        }
+
+        function resetForecast() { if (forecastEl) forecastEl.hidden = true; }
+
+        // "Use forecasted points in calculator" — feeds the forecast back into the main inputs,
+        // closing the loop from "here's where you're headed" to "here's what that's worth".
+        (function setupForecastApply() {
+            const applyBtn = $('wf-apply');
+            if (!applyBtn) return;
+            applyBtn.addEventListener('click', () => {
+                const v = applyBtn.dataset.forecastPts;
+                if (!v) return;
+                inputs.yourPoints.value = v;
+                calculate();
+                showToast('Forecasted points applied to your results');
+                const featured = document.querySelector('.result-item.featured');
+                if (featured) featured.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        })();
+
         // Tooltip on bar hover (event delegation; works for re-rendered bars)
         (function setupTooltip() {
             if (!chartEl) return;
@@ -2074,17 +2233,20 @@
                     setStatus('success', '✓ ' + fmtInt(pts) + ' points for ' + label);
                     renderDelta(updateSnapshot(addr, pts));
                     renderHistory(epochs);
+                    renderForecast(epochs, pts);
                     lsSet(raw);
                     refreshForget();
                 } else {
                     setStatus('error', 'No Nado points found for ' + label + ' yet.');
                     resetHistory();
                     clearDelta();
+                    resetForecast();
                 }
             } catch (err) {
                 setStatus('error', "Couldn't reach the API. Check the address/name or try again.");
                 resetHistory();
                 clearDelta();
+                resetForecast();
             } finally {
                 btn.disabled = false;
             }
@@ -2098,6 +2260,7 @@
             addrEl.value = '';
             resetHistory();
             clearDelta();
+            resetForecast();
             setStatus('', 'Paste a wallet address or a .eth / .ink name to read your on-chain Nado points. Your input stays in your browser.');
             refreshForget();
         });
