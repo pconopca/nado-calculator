@@ -2257,9 +2257,11 @@
         const hasFdv   = fdvUsd > 0;
 
         const W = 1200, H = 630;
+        const SCALE = 2; // render at 2x (retina-quality) for crisp text/edges without an oversized file
         const canvas = document.createElement('canvas');
-        canvas.width = W; canvas.height = H;
+        canvas.width = W * SCALE; canvas.height = H * SCALE;
         const ctx = canvas.getContext('2d');
+        ctx.scale(SCALE, SCALE); // all drawing below still uses the 1200×630 logical coordinate space
 
         // Background
         ctx.fillStyle = '#0B0A12';
@@ -2306,10 +2308,18 @@
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
 
-        // Headline
+        // Headline — "Nado" is the emphasis; the $INK token denomination is a de-emphasized tag
         ctx.fillStyle = '#FFFFFF';
         ctx.font = `800 44px ${F}`;
-        ctx.fillText('My $INK airdrop projection', 56, 128);
+        const headline = 'My Nado airdrop projection';
+        ctx.fillText(headline, 56, 128);
+        const headlineW = ctx.measureText(headline).width;
+
+        ctx.fillStyle = '#6E6C85';
+        ctx.font = `700 15px ${F}`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText('in $INK tokens', 56 + headlineW + 16, 128 + 25);
+        ctx.textBaseline = 'top';
 
         // Hero: the estimated $ value, big and green — mirrors the app's featured result
         ctx.fillStyle = '#6E6C85';
