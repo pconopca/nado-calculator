@@ -764,18 +764,18 @@
         .png-btn:disabled { opacity: .5; cursor: progress; }
         @media (max-width: 420px) { .share-actions { grid-template-columns: 1fr; } }
 
-        /* ── Scenario comparison (Bear / Base / Bull) ── */
-        .scenario-grid {
+        /* ── Input recap (points / allocation % / FDV), highlighted ── */
+        .input-recap-grid {
             display: grid; grid-template-columns: repeat(3,1fr); gap: 1px;
             background: var(--border); border: 1px solid var(--border);
             border-radius: 10px; overflow: hidden;
         }
-        .scenario-cell { padding: 12px 8px; background: var(--bg); text-align: center; }
-        .scenario-cell.base { background: var(--ink-purple-dim); }
-        .scenario-cell .sc-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
-        .scenario-cell .sc-pct { font-size: 10px; font-weight: 600; color: var(--text-muted); margin: 3px 0 4px; }
-        .scenario-cell .sc-val { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: -.3px; }
-        .scenario-cell.base .sc-val { color: var(--ink-purple-light); }
+        .input-recap-cell { padding: 12px 8px; background: var(--bg); text-align: center; }
+        .input-recap-cell .irc-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 4px; }
+        .input-recap-cell .irc-val { font-size: 19px; font-weight: 800; letter-spacing: -.3px; font-variant-numeric: tabular-nums; }
+        .input-recap-cell.pts .irc-val { color: var(--text); }
+        .input-recap-cell.pct .irc-val { color: var(--ink-purple-light); }
+        .input-recap-cell.fdv .irc-val { color: var(--green); }
 
         /* ── Supply donut ── */
         .donut-section { padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
@@ -832,7 +832,7 @@
             .card-body { padding: 18px 16px; gap: 16px; }
             .result-body { padding: 18px 16px; }
             .donut-wrap { flex-direction: column; gap: 14px; }
-            .scenario-cell .sc-val { font-size: 14px; }
+            .input-recap-cell .irc-val { font-size: 16px; }
         }
     </style>
 </head>
@@ -1292,25 +1292,19 @@
                             <div class="result-sub" id="result-usd-sub">Enter your points to calculate</div>
                         </div>
 
-                        <!-- Scenario comparison: projected airdrop band -->
-                        <div>
-                            <div class="result-label" style="margin-bottom:7px;">Projected airdrop band</div>
-                            <div class="scenario-grid">
-                                <div class="scenario-cell">
-                                    <div class="sc-label">Bear</div>
-                                    <div class="sc-pct">3% airdrop</div>
-                                    <div class="sc-val" id="sc-bear">$0</div>
-                                </div>
-                                <div class="scenario-cell base">
-                                    <div class="sc-label">Base</div>
-                                    <div class="sc-pct">6.5% airdrop</div>
-                                    <div class="sc-val" id="sc-base">$0</div>
-                                </div>
-                                <div class="scenario-cell">
-                                    <div class="sc-label">Bull</div>
-                                    <div class="sc-pct">10% airdrop</div>
-                                    <div class="sc-val" id="sc-bull">$0</div>
-                                </div>
+                        <!-- Input recap: points / allocation % / FDV, highlighted -->
+                        <div class="input-recap-grid">
+                            <div class="input-recap-cell pts">
+                                <div class="irc-label">Your Points</div>
+                                <div class="irc-val" id="recap-points">0</div>
+                            </div>
+                            <div class="input-recap-cell pct">
+                                <div class="irc-label">Allocation</div>
+                                <div class="irc-val" id="recap-pct">10.0%</div>
+                            </div>
+                            <div class="input-recap-cell fdv">
+                                <div class="irc-label">Est. FDV</div>
+                                <div class="irc-val" id="recap-fdv">$1.00B</div>
                             </div>
                         </div>
 
@@ -1786,15 +1780,11 @@
             $('result-usd-sub').textContent = 'Enter your points to calculate';
         }
 
-        /* ── Scenario band (Bear 3% / Base 6.5% / Bull 10%) ── */
-        const showScenario = yourPoints > 0 && hasFdv;
-        if (showScenario) {
-            animateNum($('sc-bear'), yourUsd(3),   v => fmtUsd(v));
-            animateNum($('sc-base'), yourUsd(6.5), v => fmtUsd(v));
-            animateNum($('sc-bull'), yourUsd(10),  v => fmtUsd(v));
-        } else {
-            setText($('sc-bear'), '—'); setText($('sc-base'), '—'); setText($('sc-bull'), '—');
-        }
+        /* ── Input recap (points / allocation % / FDV), highlighted ── */
+        animateNum($('recap-points'), yourPoints, v => fmtInt(v));
+        $('recap-pct').textContent = airdropPct.toFixed(1) + '%';
+        if (hasFdv) animateNum($('recap-fdv'), fdvUsd, v => fmtUsd(v));
+        else setText($('recap-fdv'), '—');
 
         /* ── Secondary results ── */
         animateNum($('result-share'), yourShare, v => v.toFixed(4) + '%');
@@ -2248,10 +2238,11 @@
     /* ── Save results as PNG (1200×630 social card) ── */
     function buildResultsCanvas() {
         // Read state synchronously from inputs (immune to rAF/animation state)
-        const pts      = Math.max(0, parseFloat(inputs.yourPoints.value) || 0);
-        const fdvNum   = Math.max(0, parseFloat(inputs.fdv.value)        || 0);
-        const s2Wks    = Math.max(0, parseFloat(inputs.s2Weeks.value)    || 0);
-        const fdvUsd   = fdvNum * (inputs.fdvUnit.value === 'billion' ? 1e9 : 1e6);
+        const pts        = Math.max(0, parseFloat(inputs.yourPoints.value) || 0);
+        const fdvNum     = Math.max(0, parseFloat(inputs.fdv.value)        || 0);
+        const s2Wks      = Math.max(0, parseFloat(inputs.s2Weeks.value)    || 0);
+        const airdropPct = Math.max(0, parseFloat(inputs.airdropPct.value) || 0);
+        const fdvUsd     = fdvNum * (inputs.fdvUnit.value === 'billion' ? 1e9 : 1e6);
         let s2Pool;
         if (poolMode === 'live' && liveAvgPool != null) {
             s2Pool = liveAvgPool;
@@ -2264,7 +2255,6 @@
         const share    = totalPts > 0 ? pts / totalPts : 0;
         const myUsd    = pct => fdvUsd * (pct / 100) * share;
         const hasFdv   = fdvUsd > 0;
-        const fdvLabel = '$' + fdvNum + (inputs.fdvUnit.value === 'billion' ? 'B' : 'M');
 
         const W = 1200, H = 630;
         const canvas = document.createElement('canvas');
@@ -2318,62 +2308,59 @@
 
         // Headline
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `800 56px ${F}`;
-        ctx.fillText('My $INK airdrop projection', 56, 175);
+        ctx.font = `800 44px ${F}`;
+        ctx.fillText('My $INK airdrop projection', 56, 128);
 
-        // Subline
+        // Hero: the estimated $ value, big and green — mirrors the app's featured result
+        ctx.fillStyle = '#6E6C85';
+        ctx.font = `800 13px ${F}`;
+        ctx.fillText(`ESTIMATED $ VALUE · ${airdropPct.toFixed(1)}% ALLOCATION`, 56, 196);
+
+        ctx.fillStyle = '#3DDC84';
+        ctx.font = `800 76px ${F}`;
+        ctx.fillText(hasFdv ? fmtUsd(myUsd(airdropPct)) : '—', 56, 218);
+
         ctx.fillStyle = '#C0BDDA';
-        ctx.font = `600 20px ${F}`;
-        ctx.fillText(
-            hasFdv ? `Based on ${fmtInt(pts)} points · ${fdvLabel} FDV` :
-                     `Based on ${fmtInt(pts)} points`,
-            56, 245
-        );
+        ctx.font = `600 17px ${F}`;
+        ctx.fillText(`${(share * 100).toFixed(4)}% share of the total points pool`, 58, 306);
 
-        // Three scenario cards
-        const scenarios = [
-            { label: 'BEAR',  pct: '3% airdrop',   value: hasFdv ? fmtUsd(myUsd(3))   : '—', color: '#C0BDDA' },
-            { label: 'BASE',  pct: '6.5% airdrop', value: hasFdv ? fmtUsd(myUsd(6.5)) : '—', color: '#A67DFF', highlight: true },
-            { label: 'BULL',  pct: '10% airdrop',  value: hasFdv ? fmtUsd(myUsd(10))  : '—', color: '#3DDC84' }
+        // Highlighted input recap: Points / Allocation / FDV — mirrors the app's recap row
+        const recap = [
+            { label: 'YOUR POINTS', value: fmtInt(pts),                     color: '#FFFFFF' },
+            { label: 'ALLOCATION',  value: airdropPct.toFixed(1) + '%',     color: '#A67DFF' },
+            { label: 'EST. FDV',    value: hasFdv ? fmtUsd(fdvUsd) : '—',   color: '#3DDC84' }
         ];
-        const cardW = 350, cardH = 175, gap = 18;
+        const cardW = 350, cardH = 140, gap = 18;
         const cardsW = cardW * 3 + gap * 2;
         const startX = (W - cardsW) / 2;
-        const cardY  = 305;
-        scenarios.forEach((s, i) => {
+        const cardY  = 352;
+        recap.forEach((s, i) => {
             const x = startX + i * (cardW + gap);
-            // Card bg
-            ctx.fillStyle = s.highlight ? 'rgba(123,63,228,0.14)' : '#13121E';
+            ctx.fillStyle = '#13121E';
             roundRect(ctx, x, cardY, cardW, cardH, 14); ctx.fill();
-            ctx.strokeStyle = s.highlight ? 'rgba(123,63,228,0.45)' : 'rgba(255,255,255,0.07)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.07)';
             ctx.lineWidth = 1.5;
             roundRect(ctx, x, cardY, cardW, cardH, 14); ctx.stroke();
             // Label
             ctx.fillStyle = '#6E6C85';
             ctx.font = `800 13px ${F}`;
-            ctx.fillText(s.label, x + 24, cardY + 22);
-            // Pct
-            ctx.fillStyle = '#6E6C85';
-            ctx.font = `600 14px ${F}`;
-            ctx.fillText(s.pct, x + 24, cardY + 44);
+            ctx.fillText(s.label, x + 24, cardY + 26);
             // Value (large)
             ctx.fillStyle = s.color;
-            ctx.font = `800 44px ${F}`;
-            ctx.fillText(s.value, x + 24, cardY + 90);
+            ctx.font = `800 40px ${F}`;
+            ctx.fillText(s.value, x + 24, cardY + 62);
         });
 
         // Footer stats row
         const footerY = 530;
         ctx.fillStyle = '#6E6C85';
         ctx.font = `700 12px ${F}`;
-        ctx.fillText('YOUR POINTS', 56, footerY);
-        ctx.fillText('YOUR SHARE',  340, footerY);
-        ctx.fillText('TOTAL POOL',  624, footerY);
+        ctx.fillText('YOUR SHARE',  56, footerY);
+        ctx.fillText('TOTAL POOL',  340, footerY);
         ctx.fillStyle = '#FFFFFF';
         ctx.font = `800 22px ${F}`;
-        ctx.fillText(fmtInt(pts), 56, footerY + 22);
-        ctx.fillText((share * 100).toFixed(4) + '%', 340, footerY + 22);
-        ctx.fillText(fmtCompact(totalPts, 2), 624, footerY + 22);
+        ctx.fillText((share * 100).toFixed(4) + '%', 56, footerY + 22);
+        ctx.fillText(fmtCompact(totalPts, 2), 340, footerY + 22);
 
         // Footer URL line
         ctx.fillStyle = '#A67DFF';
