@@ -352,6 +352,12 @@
         .result-value.purple { color:var(--ink-purple-light); }
         .result-value.green  { color:var(--green); }
         .result-sub { font-size:11px; color:var(--text-muted); margin-top:1px; }
+        .result-range {
+            margin-top:9px; padding-top:9px; border-top:1px solid var(--border);
+            font-size:11px; color:var(--text-muted); line-height:1.5;
+        }
+        .result-range strong { color:var(--text-2); font-weight:700; }
+        .result-range .rr-tag { color:var(--amber); font-weight:600; }
 
         .results-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .results-grid .result-value { font-size:20px; }
@@ -639,6 +645,18 @@
         .wallet-status.loading { color: var(--ink-purple-light); }
         .wallet-status.success { color: var(--green); font-weight: 600; }
         .wallet-status.error   { color: var(--amber); font-weight: 600; }
+
+        /* Weekly return loop — points delta since last visit */
+        .wallet-delta {
+            margin-top: 9px; display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px; border-radius: 9px;
+            font-size: 12px; font-weight: 700;
+        }
+        .wallet-delta.up   { color: var(--green); background: var(--green-dim); border: 1px solid var(--green-border); }
+        .wallet-delta.down { color: var(--amber); background: var(--amber-dim); border: 1px solid var(--amber-border); }
+        .wallet-delta.flat { color: var(--text-2); background: var(--input-bg); border: 1px solid var(--border); }
+        .wallet-delta .wd-arrow { font-size: 13px; line-height: 1; }
+        .wallet-delta .wd-sub { color: var(--text-muted); font-weight: 500; margin-left: auto; white-space: nowrap; }
 
         /* ── Wallet on-chain history (rank, tier, per-epoch chart) ── */
         .wallet-history { margin-top: 14px; }
@@ -974,6 +992,7 @@
                             <button class="wallet-fetch-btn" id="wallet-fetch" type="button">Track</button>
                         </div>
                         <div class="wallet-status" id="wallet-status">Paste a wallet address or a .eth / .ink name to read your on-chain Nado points. Your input stays in your browser.</div>
+                        <div class="wallet-delta" id="wallet-delta" hidden></div>
                         <button class="wh-forget" id="wh-forget" type="button" hidden>Forget this wallet</button>
 
                         <div class="wallet-history" id="wallet-history" hidden>
@@ -1290,6 +1309,7 @@
                             <div class="result-label">Estimated $ Value — <span id="result-pct-label">10%</span> scenario</div>
                             <div class="result-value green" id="result-usd">$0.00</div>
                             <div class="result-sub" id="result-usd-sub">Enter your points to calculate</div>
+                            <div class="result-range" id="result-range" hidden></div>
                         </div>
 
                         <!-- Input recap: points / allocation % / FDV, highlighted -->
@@ -1769,15 +1789,26 @@
         $('fdv-note').innerHTML = 'FDV: <strong>' + fmtUsd(fdvUsd) + '</strong> — adjust to model different valuations';
 
         /* ── Main result ── */
+        const rangeEl = $('result-range');
         if (yourPoints > 0 && hasFdv) {
             animateNum($('result-usd'), yourUsd(airdropPct), v => fmtUsd(v));
             $('result-usd-sub').textContent = yourShare.toFixed(4) + '% share · ' + fmtInt(yourPoints) + ' pts';
+            // Honesty of uncertainty: the $ value hinges on the (unconfirmed) airdrop %.
+            // Show the plausible band across the projected 3–10% range.
+            if (rangeEl) {
+                rangeEl.hidden = false;
+                rangeEl.innerHTML = '<span class="rr-tag">⚡ Speculative</span> — if the airdrop lands at ' +
+                    '<strong>3–10%</strong> of supply, your value spans <strong>' +
+                    fmtUsd(yourUsd(3)) + ' – ' + fmtUsd(yourUsd(10)) + '</strong>';
+            }
         } else if (yourPoints > 0) {
             setText($('result-usd'), '—');
             $('result-usd-sub').textContent = 'Enter FDV to get $ value';
+            if (rangeEl) rangeEl.hidden = true;
         } else {
             setText($('result-usd'), '$0.00');
             $('result-usd-sub').textContent = 'Enter your points to calculate';
+            if (rangeEl) rangeEl.hidden = true;
         }
 
         /* ── Input recap (points / allocation % / FDV), highlighted ── */
@@ -1849,6 +1880,53 @@
         const lsSet = v  => { try { localStorage.setItem(STORAGE_KEY, v); } catch (_) {} };
         const lsDel = () => { try { localStorage.removeItem(STORAGE_KEY); } catch (_) {} };
         const refreshForget = () => { forgetBtn.hidden = !lsGet(); };
+
+        /* ── Weekly return loop: per-address points snapshots ── */
+        const SNAP_KEY = 'nado-calc-snap-v1';
+        const deltaEl = $('wallet-delta');
+        function snapAll() { try { return JSON.parse(localStorage.getItem(SNAP_KEY) || '{}') || {}; } catch (_) { return {}; } }
+        function snapSaveAll(o) { try { localStorage.setItem(SNAP_KEY, JSON.stringify(o)); } catch (_) {} }
+        function timeAgo(ts) {
+            const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+            if (s < 90)      return 'just now';
+            const m = Math.floor(s / 60);
+            if (m < 60)      return m + (m === 1 ? ' min ago' : ' mins ago');
+            const h = Math.floor(m / 60);
+            if (h < 24)      return h + (h === 1 ? ' hour ago' : ' hours ago');
+            const d = Math.floor(h / 24);
+            if (d < 30)      return d + (d === 1 ? ' day ago' : ' days ago');
+            const mo = Math.floor(d / 30);
+            return mo + (mo === 1 ? ' month ago' : ' months ago');
+        }
+        // Update the stored snapshot for an address and return {delta, sinceTs} to display (or null).
+        // We keep a "base" (previous different value) so the delta persists across reloads until points change again.
+        function updateSnapshot(addr, pts) {
+            const key = addr.toLowerCase();
+            const all = snapAll();
+            const now = Date.now();
+            let s = all[key];
+            if (!s) {
+                s = { cur: pts, curTs: now, base: null, baseTs: null };  // first baseline
+            } else if (pts !== s.cur) {
+                s = { cur: pts, curTs: now, base: s.cur, baseTs: s.curTs }; // movement: old cur becomes base
+            } // else unchanged → keep as-is
+            all[key] = s;
+            snapSaveAll(all);
+            if (s.base == null) return null;
+            return { delta: s.cur - s.base, sinceTs: s.baseTs };
+        }
+        function renderDelta(info) {
+            if (!deltaEl) return;
+            if (!info || info.delta === 0) { deltaEl.hidden = true; return; }
+            const up = info.delta > 0;
+            deltaEl.hidden = false;
+            deltaEl.className = 'wallet-delta ' + (up ? 'up' : 'down');
+            deltaEl.innerHTML =
+                '<span class="wd-arrow">' + (up ? '▲' : '▼') + '</span>' +
+                '<span>' + (up ? '+' : '−') + fmtInt(Math.abs(info.delta)) + ' points since your last visit</span>' +
+                '<span class="wd-sub">' + timeAgo(info.sinceTs) + '</span>';
+        }
+        function clearDelta() { if (deltaEl) deltaEl.hidden = true; }
 
         function renderHistory(epochs) {
             if (!historyEl) return;
@@ -1994,16 +2072,19 @@
                 const label = isName ? raw + ' (' + shorten(addr) + ')' : shorten(addr);
                 if (pts > 0) {
                     setStatus('success', '✓ ' + fmtInt(pts) + ' points for ' + label);
+                    renderDelta(updateSnapshot(addr, pts));
                     renderHistory(epochs);
                     lsSet(raw);
                     refreshForget();
                 } else {
                     setStatus('error', 'No Nado points found for ' + label + ' yet.');
                     resetHistory();
+                    clearDelta();
                 }
             } catch (err) {
                 setStatus('error', "Couldn't reach the API. Check the address/name or try again.");
                 resetHistory();
+                clearDelta();
             } finally {
                 btn.disabled = false;
             }
@@ -2016,6 +2097,7 @@
             lsDel();
             addrEl.value = '';
             resetHistory();
+            clearDelta();
             setStatus('', 'Paste a wallet address or a .eth / .ink name to read your on-chain Nado points. Your input stays in your browser.');
             refreshForget();
         });
@@ -2332,7 +2414,16 @@
 
         ctx.fillStyle = '#C0BDDA';
         ctx.font = `600 17px ${F}`;
-        ctx.fillText(`${(share * 100).toFixed(4)}% share of the total points pool`, 58, 306);
+        ctx.fillText(`${(share * 100).toFixed(4)}% share of the total points pool`, 58, 302);
+
+        // Honesty of uncertainty: plausible band across a 3–10% airdrop
+        ctx.fillStyle = '#8A7FB0';
+        ctx.font = `600 15px ${F}`;
+        ctx.fillText(
+            hasFdv ? `Speculative · at a 3–10% airdrop: ${fmtUsd(myUsd(3))} – ${fmtUsd(myUsd(10))}`
+                   : 'Speculative estimate · airdrop % unconfirmed',
+            58, 328
+        );
 
         // Highlighted input recap: Points / Allocation / FDV — mirrors the app's recap row
         const recap = [
@@ -2340,10 +2431,10 @@
             { label: 'ALLOCATION',  value: airdropPct.toFixed(1) + '%',     color: '#A67DFF' },
             { label: 'EST. FDV',    value: hasFdv ? fmtUsd(fdvUsd) : '—',   color: '#3DDC84' }
         ];
-        const cardW = 350, cardH = 140, gap = 18;
+        const cardW = 350, cardH = 128, gap = 18;
         const cardsW = cardW * 3 + gap * 2;
         const startX = (W - cardsW) / 2;
-        const cardY  = 352;
+        const cardY  = 368;
         recap.forEach((s, i) => {
             const x = startX + i * (cardW + gap);
             ctx.fillStyle = '#13121E';
