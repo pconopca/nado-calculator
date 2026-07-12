@@ -1527,6 +1527,16 @@
 </footer>
 
 <script>
+    /* ── Analytics: fire a custom Plausible event (safe no-op if the script is blocked/absent).
+       Only low-cardinality, non-personal props are ever sent — never addresses or point counts. ── */
+    function trackEvent(name, props) {
+        try {
+            if (typeof window.plausible === 'function') {
+                window.plausible(name, props ? { props } : undefined);
+            }
+        } catch (_) {}
+    }
+
     /* ── Constants ── */
     // Per Nado docs: 24,941,776 points distributed across Private Alpha, Off-Season, and Season 1.
     // Builder Codes (1M) and Comp/Reserve (1M) remain as separate pools. Trading Comps was removed.
@@ -2160,10 +2170,11 @@
                         forecastIncluded = wantOn;
                         setForecastToggleUI();
                         if (wantOn) {
-                            const { forecastPts } = currentForecast();
+                            const { weeks, forecastPts } = currentForecast();
                             inputs.yourPoints.value = String(forecastPts);
                             calculate();
                             showToast('Projected points included in your results');
+                            trackEvent('Forecast Included', { weeks: String(weeks) });
                         } else {
                             inputs.yourPoints.value = String(currentPts);
                             calculate();
@@ -2242,7 +2253,7 @@
                    (d.owner && d.owner.hash) || null;
         }
 
-        async function track() {
+        async function track(fromAuto) {
             const raw = (addrEl.value || '').trim();
             const isName = /\.(eth|ink)$/i.test(raw);
             let addr = raw;
@@ -2285,6 +2296,7 @@
                     renderForecast(epochs, pts);
                     lsSet(raw);
                     refreshForget();
+                    if (!fromAuto) trackEvent('Wallet Tracked', { input_type: isName ? 'name' : 'address' });
                 } else {
                     setStatus('error', 'No Nado points found for ' + label + ' yet.');
                     resetHistory();
@@ -2300,8 +2312,8 @@
                 btn.disabled = false;
             }
         }
-        btn.addEventListener('click', track);
-        addrEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); track(); } });
+        btn.addEventListener('click', () => track(false));
+        addrEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); track(false); } });
 
         // Forget saved wallet
         forgetBtn.addEventListener('click', () => {
@@ -2324,8 +2336,8 @@
             if (walletBtn) walletBtn.click();
             addrEl.value = saved;
             refreshForget();
-            // Auto-track without blocking the page render
-            setTimeout(track, 50);
+            // Auto-track without blocking the page render (flagged so it isn't counted as a user action)
+            setTimeout(() => track(true), 50);
         } else {
             refreshForget();
         }
@@ -2485,6 +2497,7 @@
     /* ── Share + Reset buttons ── */
     $('share-btn').addEventListener('click', async () => {
         const url = location.href;
+        trackEvent('Link Copied');
         try { await navigator.clipboard.writeText(url); showToast('Link copied to clipboard'); }
         catch (e) {
             const ta = document.createElement('textarea');
@@ -2526,6 +2539,7 @@
         }
         const url = 'https://x.com/intent/tweet?text=' + encodeURIComponent(text) +
                     '&url=' + encodeURIComponent('https://nadocalc.xyz/');
+        trackEvent('Tweet Shared', { has_results: hasResults ? 'yes' : 'no' });
         window.open(url, '_blank', 'noopener,width=600,height=500');
     });
 
@@ -2718,6 +2732,7 @@
                 document.body.removeChild(a);
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
                 showToast('Image saved to downloads');
+                trackEvent('PNG Downloaded');
                 btn.disabled = false;
             }, 'image/png');
         } catch (e) {
@@ -2766,7 +2781,10 @@
         const toggle = $('pool-mode');
         if (!toggle) return;
         toggle.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => setPoolMode(btn.dataset.mode));
+            btn.addEventListener('click', () => {
+                setPoolMode(btn.dataset.mode);
+                trackEvent('Pool Mode', { mode: btn.dataset.mode === 'custom' ? 'custom' : 'live' });
+            });
         });
     })();
 
