@@ -769,12 +769,20 @@
         .wf-result { font-size:12.5px; color:var(--text-2); line-height:1.7; margin-bottom:10px; }
         .wf-result strong { color:var(--text); font-weight:800; }
         .wf-result .wf-range { color:var(--green); font-weight:700; }
-        .wf-apply {
-            width:100%; padding:9px 14px; border-radius:8px; cursor:pointer;
-            background: var(--ink-purple-dim); border:1px solid var(--ink-purple-border); color:var(--ink-purple-light);
-            font-family:inherit; font-size:12px; font-weight:800; transition: background .15s;
+        .wf-toggle-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px; }
+        .wf-toggle-row-label { font-size:11.5px; font-weight:700; color:var(--text-2); }
+        .wf-toggle {
+            display:flex; gap:2px; padding:2px;
+            background: var(--input-bg); border:1px solid var(--border); border-radius:8px; flex-shrink:0;
         }
-        .wf-apply:hover { background: rgba(123,63,228,.22); }
+        .wf-toggle-btn {
+            font-family: inherit; font-size:11px; font-weight:700; color:var(--text-muted);
+            background:transparent; border:none; border-radius:6px;
+            padding:5px 10px; cursor:pointer; transition: all .15s;
+        }
+        .wf-toggle-btn:hover { color: var(--text-2); }
+        .wf-toggle-btn.active[data-val="on"]  { background: var(--green-dim); color: var(--green); box-shadow: inset 0 0 0 1px var(--green-border); }
+        .wf-toggle-btn.active[data-val="off"] { background: var(--card-2); color: var(--text-2); box-shadow: inset 0 0 0 1px var(--border); }
         .wf-note { font-size:10px; color:var(--text-muted); margin-top:9px; line-height:1.5; }
 
         /* ── Preset chips ── */
@@ -1063,7 +1071,13 @@
                                 <span class="wf-unit">weeks</span>
                             </div>
                             <div class="wf-result" id="wf-result"></div>
-                            <button class="wf-apply" id="wf-apply" type="button" hidden>Use forecasted points in calculator ↓</button>
+                            <div class="wf-toggle-row">
+                                <span class="wf-toggle-row-label">Include in calculator results</span>
+                                <div class="wf-toggle" id="wf-toggle">
+                                    <button class="wf-toggle-btn" type="button" data-val="off">Not included</button>
+                                    <button class="wf-toggle-btn" type="button" data-val="on">Included</button>
+                                </div>
+                            </div>
                             <div class="wf-note">Naive projection assuming your recent pace continues — actual results depend on your future trading volume.</div>
                         </div>
                     </div>
@@ -2073,17 +2087,32 @@
             return 8;
         }
 
+        // Whether the projection is currently folded into the calculator's Your Points input.
+        // Persists across re-tracks within the session so toggling doesn't reset on refresh-track.
+        let forecastIncluded = false;
+
+        function setForecastToggleUI() {
+            const toggle = $('wf-toggle');
+            if (!toggle) return;
+            toggle.querySelectorAll('.wf-toggle-btn').forEach(b =>
+                b.classList.toggle('active', (b.dataset.val === 'on') === forecastIncluded));
+        }
+
         function renderForecast(epochs, currentPts) {
             if (!forecastEl) return;
             const pace = computeWeeklyPace(epochs);
-            if (!pace) { forecastEl.hidden = true; return; }
+            if (!pace) { forecastEl.hidden = true; forecastIncluded = false; return; }
             forecastEl.hidden = false;
             $('wf-pace').textContent = '~' + fmtInt(pace.avgPace) + ' pts/week';
             $('wf-weeks').value = defaultForecastWeeks();
 
-            function update() {
+            function currentForecast() {
                 const weeks = Math.max(1, Math.min(104, parseFloat($('wf-weeks').value) || 8));
-                const forecastPts = Math.round(currentPts + pace.avgPace * weeks);
+                return { weeks, forecastPts: Math.round(currentPts + pace.avgPace * weeks) };
+            }
+
+            function update() {
+                const { weeks, forecastPts } = currentForecast();
                 const gain = forecastPts - currentPts;
 
                 // Value the forecast against the *current* total pool assumption (live or custom),
@@ -2110,31 +2139,48 @@
                         '</span> at a 3–10% airdrop';
                 }
                 $('wf-result').innerHTML = html;
-                const applyBtn = $('wf-apply');
-                applyBtn.hidden = false;
-                applyBtn.dataset.forecastPts = String(forecastPts);
+
+                // While "Included" is on, keep Your Points live-synced to the projection as the
+                // weeks input changes — this is meant to be a persistent inclusion, not a one-shot apply.
+                if (forecastIncluded) {
+                    inputs.yourPoints.value = String(forecastPts);
+                    calculate();
+                }
             }
             update();
             $('wf-weeks').oninput = update;
+
+            // Toggle: fold the projection into (or back out of) the calculator's Your Points.
+            const toggle = $('wf-toggle');
+            if (toggle) {
+                toggle.querySelectorAll('.wf-toggle-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        const wantOn = btn.dataset.val === 'on';
+                        if (wantOn === forecastIncluded) return;
+                        forecastIncluded = wantOn;
+                        setForecastToggleUI();
+                        if (wantOn) {
+                            const { forecastPts } = currentForecast();
+                            inputs.yourPoints.value = String(forecastPts);
+                            calculate();
+                            showToast('Projected points included in your results');
+                        } else {
+                            inputs.yourPoints.value = String(currentPts);
+                            calculate();
+                            showToast('Back to your current tracked points');
+                        }
+                        const featured = document.querySelector('.result-item.featured');
+                        if (featured) featured.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    };
+                });
+            }
+            setForecastToggleUI();
         }
 
-        function resetForecast() { if (forecastEl) forecastEl.hidden = true; }
-
-        // "Use forecasted points in calculator" — feeds the forecast back into the main inputs,
-        // closing the loop from "here's where you're headed" to "here's what that's worth".
-        (function setupForecastApply() {
-            const applyBtn = $('wf-apply');
-            if (!applyBtn) return;
-            applyBtn.addEventListener('click', () => {
-                const v = applyBtn.dataset.forecastPts;
-                if (!v) return;
-                inputs.yourPoints.value = v;
-                calculate();
-                showToast('Forecasted points applied to your results');
-                const featured = document.querySelector('.result-item.featured');
-                if (featured) featured.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            });
-        })();
+        function resetForecast() {
+            if (forecastEl) forecastEl.hidden = true;
+            forecastIncluded = false;
+        }
 
         // Tooltip on bar hover (event delegation; works for re-rendered bars)
         (function setupTooltip() {
