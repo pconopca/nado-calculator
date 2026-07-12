@@ -772,17 +772,41 @@
         .wf-toggle-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px; }
         .wf-toggle-row-label { font-size:11.5px; font-weight:700; color:var(--text-2); }
         .wf-toggle {
-            display:flex; gap:2px; padding:2px;
+            position: relative;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+            padding: 2px;
             background: var(--input-bg); border:1px solid var(--border); border-radius:8px; flex-shrink:0;
         }
-        .wf-toggle-btn {
-            font-family: inherit; font-size:11px; font-weight:700; color:var(--text-muted);
-            background:transparent; border:none; border-radius:6px;
-            padding:5px 10px; cursor:pointer; transition: all .15s;
+        /* Sliding thumb: sits in grid column 1, slides to column 2 via transform */
+        .wf-toggle-thumb {
+            grid-row: 1; grid-column: 1;
+            border-radius: 6px;
+            background: var(--card-2);
+            box-shadow: inset 0 0 0 1px var(--border);
+            transition: transform .34s cubic-bezier(.34, 1.32, .5, 1),
+                        background-color .22s ease, box-shadow .22s ease;
+            z-index: 0;
         }
+        .wf-toggle[data-state="on"] .wf-toggle-thumb {
+            transform: translateX(100%);
+            background: var(--green-dim);
+            box-shadow: inset 0 0 0 1px var(--green-border);
+        }
+        .wf-toggle-btn {
+            grid-row: 1; position: relative; z-index: 1;
+            font-family: inherit; font-size:11px; font-weight:700; color:var(--text-muted);
+            background: transparent; border:none; border-radius:6px;
+            padding:5px 10px; cursor:pointer; text-align:center;
+            transition: color .22s ease;
+        }
+        .wf-toggle-btn[data-val="off"] { grid-column: 1; }
+        .wf-toggle-btn[data-val="on"]  { grid-column: 2; }
         .wf-toggle-btn:hover { color: var(--text-2); }
-        .wf-toggle-btn.active[data-val="on"]  { background: var(--green-dim); color: var(--green); box-shadow: inset 0 0 0 1px var(--green-border); }
-        .wf-toggle-btn.active[data-val="off"] { background: var(--card-2); color: var(--text-2); box-shadow: inset 0 0 0 1px var(--border); }
+        .wf-toggle[data-state="off"] .wf-toggle-btn[data-val="off"] { color: var(--text-2); }
+        .wf-toggle[data-state="on"]  .wf-toggle-btn[data-val="on"]  { color: var(--green); }
+        @media (prefers-reduced-motion: reduce) {
+            .wf-toggle-thumb { transition: background-color .15s, box-shadow .15s; }
+        }
         .wf-note { font-size:10px; color:var(--text-muted); margin-top:9px; line-height:1.5; }
 
         /* ── Preset chips ── */
@@ -1073,7 +1097,8 @@
                             <div class="wf-result" id="wf-result"></div>
                             <div class="wf-toggle-row">
                                 <span class="wf-toggle-row-label">Include in calculator results</span>
-                                <div class="wf-toggle" id="wf-toggle">
+                                <div class="wf-toggle" id="wf-toggle" data-state="off">
+                                    <span class="wf-toggle-thumb" aria-hidden="true"></span>
                                     <button class="wf-toggle-btn" type="button" data-val="off">Not included</button>
                                     <button class="wf-toggle-btn" type="button" data-val="on">Included</button>
                                 </div>
@@ -2104,8 +2129,7 @@
         function setForecastToggleUI() {
             const toggle = $('wf-toggle');
             if (!toggle) return;
-            toggle.querySelectorAll('.wf-toggle-btn').forEach(b =>
-                b.classList.toggle('active', (b.dataset.val === 'on') === forecastIncluded));
+            toggle.dataset.state = forecastIncluded ? 'on' : 'off'; // drives the sliding thumb + colors
         }
 
         function renderForecast(epochs, currentPts) {
