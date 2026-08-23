@@ -1640,7 +1640,7 @@
             }
         } catch (_) {}
 
-        const res = await fetch('https://archive.prod.nado.xyz/v1', {
+        const res = await fetch('https://rewards.prod.nado.xyz/v1', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nado_points: { address: '0x0000000000000000000000000000000000000000' } })
@@ -2296,7 +2296,7 @@
                     return;
                 }
                 setStatus('loading', 'Reading on-chain points…');
-                const res = await fetch('https://archive.prod.nado.xyz/v1', {
+                const res = await fetch('https://rewards.prod.nado.xyz/v1', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nado_points: { address: addr } })
