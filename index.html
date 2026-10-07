@@ -809,6 +809,47 @@
         }
         .wf-note { font-size:10px; color:var(--text-muted); margin-top:9px; line-height:1.5; }
 
+        /* ── Trading panorama (volume, efficiency, cost per point) ── */
+        .wallet-panorama {
+            margin-top: 14px; padding: 14px;
+            background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px;
+        }
+        .wp-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+        .wp-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-2); }
+        .wp-sub { font-size:10px; font-weight:600; color:var(--text-muted); }
+        .wp-loading { font-size:11.5px; color:var(--ink-purple-light); font-weight:600; padding:10px 0; }
+        .wp-error { font-size:11.5px; color:var(--amber); font-weight:600; line-height:1.5; }
+        .wp-grid {
+            display:grid; grid-template-columns:1fr 1fr; gap:1px;
+            background:var(--border); border:1px solid var(--border); border-radius:8px; overflow:hidden;
+        }
+        .wp-cell { background:var(--card); padding:9px 10px; }
+        .wp-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-bottom:3px; }
+        .wp-val { font-size:15px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; }
+        .wp-val.accent { color:var(--ink-purple-light); }
+        .wp-compare { font-size:11px; color:var(--text-2); line-height:1.5; margin:8px 0 2px; }
+        .wp-compare strong { color:var(--text); }
+        .wp-compare .up { color:var(--green); font-weight:700; }
+        .wp-compare .down { color:var(--amber); font-weight:700; }
+        .wp-section-title { font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin:12px 0 6px; }
+        .wp-rows { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+        .wp-row { display:flex; justify-content:space-between; gap:10px; padding:7px 10px; font-size:12px; color:var(--text-2); border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums; }
+        .wp-row:last-child { border-bottom:none; }
+        .wp-row em { font-style:normal; color:var(--text-muted); font-size:10.5px; }
+        .wp-row span:last-child { font-weight:700; color:var(--text); }
+        .wp-row.total { background:var(--card-2); }
+        .wp-row.total span:first-child { font-weight:800; color:var(--text); }
+        .wp-row .pos { color:var(--green) !important; }
+        .wp-row .neg { color:var(--amber) !important; }
+        .wp-cpp {
+            margin-top:9px; padding:9px 11px; border-radius:8px;
+            background:var(--ink-purple-dim); border:1px solid var(--ink-purple-border);
+            font-size:11.5px; color:var(--text-2); line-height:1.6;
+        }
+        .wp-cpp strong { color:var(--text); }
+        .wp-cpp .good { color:var(--green); font-weight:800; }
+        .wp-note { font-size:10px; color:var(--text-muted); margin-top:9px; line-height:1.5; }
+
         /* ── Preset chips ── */
         .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
         .preset-chip {
@@ -1081,6 +1122,35 @@
                                     <div class="wh-tt-arrow"></div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Trading panorama: all-time volume, points efficiency, cost per point -->
+                        <div class="wallet-panorama" id="wallet-panorama" hidden>
+                            <div class="wp-header">
+                                <span class="wp-title">📊 Trading Panorama</span>
+                                <span class="wp-sub" id="wp-subs"></span>
+                            </div>
+                            <div class="wp-loading" id="wp-loading">Reading your trading history…</div>
+                            <div id="wp-body" hidden>
+                                <div class="wp-grid">
+                                    <div class="wp-cell"><div class="wp-label">All-time volume</div><div class="wp-val" id="wp-vol-all">—</div></div>
+                                    <div class="wp-cell"><div class="wp-label">Trades</div><div class="wp-val" id="wp-trades">—</div></div>
+                                    <div class="wp-cell"><div class="wp-label">Season 2 volume</div><div class="wp-val" id="wp-vol-s2">—</div></div>
+                                    <div class="wp-cell"><div class="wp-label">S2 pts per $1M</div><div class="wp-val accent" id="wp-eff">—</div></div>
+                                </div>
+                                <div class="wp-compare" id="wp-compare"></div>
+
+                                <div class="wp-section-title">Cost per point · all-time</div>
+                                <div class="wp-rows">
+                                    <div class="wp-row"><span>Fees paid</span><span id="wp-fees">—</span></div>
+                                    <div class="wp-row"><span>Perp PnL <em>(net of fees)</em></span><span id="wp-pnl">—</span></div>
+                                    <div class="wp-row"><span>Funding</span><span id="wp-funding">—</span></div>
+                                    <div class="wp-row total"><span>Net result</span><span id="wp-net">—</span></div>
+                                </div>
+                                <div class="wp-cpp" id="wp-cpp"></div>
+                                <div class="wp-note">From Nado's public trading API across all your subaccounts. PnL marks open positions at the oracle price and includes liquidations; fees are summed trade by trade.</div>
+                            </div>
+                            <div class="wp-error" id="wp-error" hidden></div>
                         </div>
 
                         <!-- Points forecast: project forward at your recent earn pace -->
@@ -1953,6 +2023,9 @@
 
         /* ── Update shareable URL (debounced) ── */
         scheduleUrlSync();
+
+        /* ── Cost-per-point comparison depends on FDV / airdrop % — keep it in sync ── */
+        renderAccountStats();
     }
 
     /* ── Listeners ── */
@@ -2318,6 +2391,7 @@
                     renderDelta(updateSnapshot(addr, pts));
                     renderHistory(epochs);
                     renderForecast(epochs, pts);
+                    loadAccountStats(addr, epochs, pts);
                     lsSet(raw);
                     refreshForget();
                     if (!fromAuto) trackEvent('Wallet Tracked', { input_type: isName ? 'name' : 'address' });
@@ -2326,12 +2400,14 @@
                     resetHistory();
                     clearDelta();
                     resetForecast();
+                    resetPanorama();
                 }
             } catch (err) {
                 setStatus('error', "Couldn't reach the API. Check the address/name or try again.");
                 resetHistory();
                 clearDelta();
                 resetForecast();
+                resetPanorama();
             } finally {
                 btn.disabled = false;
             }
@@ -2346,6 +2422,7 @@
             resetHistory();
             clearDelta();
             resetForecast();
+            resetPanorama();
             setStatus('', 'Paste a wallet address or a .eth / .ink name to read your on-chain Nado points. Your input stays in your browser.');
             refreshForget();
         });
@@ -2566,6 +2643,244 @@
         trackEvent('Tweet Shared', { has_results: hasResults ? 'yes' : 'no' });
         window.open(url, '_blank', 'noopener,width=600,height=500');
     });
+
+    /* ── Trading panorama: all-time volume, points efficiency, cost per point ──
+       Volume  = Σ quote_volume_cumulative (matches Σ|quote_filled| of every trade exactly).
+       Perp PnL = Σ (position × oracle − net_entry_cumulative); net_entry already includes
+                  trading fees and liquidations (verified: closed accounts give Σrealized − fees).
+       Fees    = Σ fee over every match, paginated (the only exact source). ── */
+    const ARCHIVE_API = 'https://archive.prod.nado.xyz/v1';
+    const REWARDS_API = 'https://rewards.prod.nado.xyz/v1';
+    const FEE_PAGE_SIZE = 500, FEE_MAX_PAGES = 40, FEE_PAGE_DELAY = 700;   // cap at ~20k trades to keep the API happy
+    let acctStats   = null;   // stats for the currently tracked wallet
+    let acctLoadSeq = 0;      // bumps on every new load/reset so stale async results are dropped
+    let platformEff = null;   // ≈ platform S2 points per $1M volume (last 4 settled weeks)
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    async function nadoPost(url, body, timeoutMs = 20000) {
+        // Abort hung requests so retries can kick in instead of stalling forever
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctrl.signal });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return await res.json();
+        } finally { clearTimeout(timer); }
+    }
+    const toNum18 = v => { try { return Number(BigInt(v || '0')) / 1e18; } catch (_) { return 0; } };
+
+    // Points epochs (Fri 01:00 UTC) and cash-incentive weeks (Sun 13:30 UTC) aren't aligned,
+    // so compare 4-week sums on each side — an approximation, labelled as such in the UI.
+    async function loadPlatformEff() {
+        if (platformEff != null) return platformEff;
+        try {
+            const zero = '0x0000000000000000000000000000000000000000';
+            const [pts, cash] = await Promise.all([
+                nadoPost(REWARDS_API, { nado_points: { address: zero } }),
+                nadoPost(REWARDS_API, { cash_incentives: { wallet_address: zero } })
+            ]);
+            const nowS = Date.now() / 1000;
+            const pools = (pts.points_per_epoch || []).filter(e => toNum18(e.total_points) > 0).slice(-4);
+            const weeks = (cash.events || []).filter(e => Number(e.metadata.epoch_end) <= nowS)
+                .sort((a, b) => Number(a.metadata.epoch_end) - Number(b.metadata.epoch_end)).slice(-4);
+            if (pools.length < 4 || weeks.length < 4) return null;
+            const poolSum = pools.reduce((a, e) => a + toNum18(e.total_points), 0);
+            const volSum  = weeks.reduce((a, e) => a + toNum18(e.platform.platform_volume), 0);
+            platformEff = volSum > 0 ? poolSum / (volSum / 1e6) : null;
+        } catch (_) { platformEff = null; }
+        return platformEff;
+    }
+
+    function showPanoramaError(msg) {
+        $('wp-loading').hidden = true; $('wp-body').hidden = true;
+        const err = $('wp-error'); err.hidden = false; err.textContent = msg;
+    }
+
+    function resetPanorama() {
+        acctLoadSeq++; acctStats = null;
+        const p = $('wallet-panorama'); if (p) p.hidden = true;
+    }
+
+    async function loadAccountStats(addr, epochs, ptsAll) {
+        const seq = ++acctLoadSeq;
+        const panel = $('wallet-panorama'); if (!panel) return;
+        acctStats = null;
+        panel.hidden = false; $('wp-loading').hidden = false; $('wp-body').hidden = true; $('wp-error').hidden = true;
+        $('wp-subs').textContent = '';
+        try {
+            const subsRes = await nadoPost(ARCHIVE_API, { subaccounts: { address: addr, limit: 100 } });
+            if (seq !== acctLoadSeq) return;
+            const subs = (subsRes.subaccounts || []).map(s => s.subaccount);
+            if (!subs.length) { showPanoramaError('No trading account found on Nado for this address.'); return; }
+
+            const nowTs = Math.floor(Date.now() / 1000);
+            const s2Ts  = Math.floor(S2_START.getTime() / 1000);
+            const snap  = await nadoPost(ARCHIVE_API, { account_snapshots: { subaccounts: subs, timestamps: [s2Ts, nowTs] } });
+            if (seq !== acctLoadSeq) return;
+
+            let volNow = 0, volAtS2 = 0, trades = 0, pnl = 0, funding = 0;
+            for (const s of subs) {
+                const byTs = (snap.snapshots || {})[s] || {};
+                for (const r of (byTs[String(s2Ts)] || [])) volAtS2 += toNum18(r.quote_volume_cumulative);
+                for (const r of (byTs[String(nowTs)] || [])) {
+                    volNow += toNum18(r.quote_volume_cumulative);
+                    trades += Number(r.cumulative_trade_count || 0);
+                    const perp = r.post_balance && r.post_balance.perp;
+                    if (perp && r.product && r.product.perp) {
+                        const amt = toNum18(perp.balance.amount);
+                        const px  = toNum18(r.product.perp.oracle_price_x18);
+                        pnl     += amt * px - toNum18(r.net_entry_cumulative);
+                        funding += toNum18(r.net_funding_cumulative);
+                    }
+                }
+            }
+            const s2StartMs = S2_START.getTime();
+            const ptsS2 = epochs.filter(e => Number(e.start_time) * 1000 >= s2StartMs)
+                                .reduce((a, e) => a + Math.round(toNum18(e.points)), 0);
+
+            acctStats = { subs: subs.length, volAll: volNow, volS2: Math.max(0, volNow - volAtS2), trades,
+                          pnl, funding, ptsAll, ptsS2, fees: null, feesPartial: false, feesScanning: true, feesError: false };
+            $('wp-loading').hidden = true; $('wp-body').hidden = false;
+            renderAccountStats();
+            loadPlatformEff().then(() => { if (seq === acctLoadSeq) renderAccountStats(); });
+            loadFees(subs, seq);
+        } catch (_) {
+            if (seq === acctLoadSeq) showPanoramaError("Couldn't load trading data from Nado. Try again in a moment.");
+        }
+    }
+
+    // Exact fees: walk every match newest→oldest with the `idx` cursor (inclusive), de-duplicating
+    // the boundary page. Renders progressively so heavy traders see the number build up.
+    async function loadFees(subs, seq) {
+        let fees = 0, pages = 0, partial = false;
+        const seen = new Set();
+        try {
+            outer:
+            for (const s of subs) {
+                let idx = null;
+                for (;;) {
+                    if (pages >= FEE_MAX_PAGES) { partial = true; break outer; }
+                    const q = { subaccounts: [s], limit: FEE_PAGE_SIZE };
+                    if (idx !== null) q.idx = idx;
+                    // The archive API rate-limits at ~1 req/s (HTTP 429) — pace pages and back off on errors
+                    if (pages > 0) await sleep(FEE_PAGE_DELAY);
+                    if (seq !== acctLoadSeq) return;
+                    let res = null;
+                    for (let attempt = 0; attempt < 6 && !res; attempt++) {
+                        try { res = await nadoPost(ARCHIVE_API, { matches: q }); }
+                        catch (e) {
+                            if (attempt === 5) throw e;
+                            await sleep(Math.min(3000 * 2 ** attempt, 20000));
+                            if (seq !== acctLoadSeq) return;
+                        }
+                    }
+                    if (seq !== acctLoadSeq) return;
+                    pages++;
+                    const m = res.matches || [];
+                    let fresh = 0, minIdx = null;
+                    for (const x of m) {
+                        const key = x.submission_idx + ':' + x.digest + ':' + x.base_filled;
+                        if (!seen.has(key)) { seen.add(key); fees += toNum18(x.fee); fresh++; }
+                        const v = BigInt(x.submission_idx);
+                        if (minIdx === null || v < minIdx) minIdx = v;
+                    }
+                    if (acctStats) { acctStats.fees = fees; acctStats.feesTrades = seen.size; renderAccountStats(); }
+                    if (m.length < FEE_PAGE_SIZE || fresh === 0) break;
+                    idx = String(minIdx);
+                }
+            }
+            if (acctStats) { acctStats.fees = fees; acctStats.feesPartial = partial; acctStats.feesScanning = false; renderAccountStats(); }
+        } catch (_) {
+            if (seq !== acctLoadSeq || !acctStats) return;
+            acctStats.feesScanning = false;
+            // Keep whatever we already summed as a partial figure; only give up entirely if we got nothing
+            if (seen.size > 0) { acctStats.fees = fees; acctStats.feesTrades = seen.size; acctStats.feesPartial = true; }
+            else acctStats.feesError = true;
+            renderAccountStats();
+        }
+    }
+
+    // $ value of one point at the calculator's current scenario (same math as the main result).
+    function currentValuePerPoint() {
+        const fdvNum = Math.max(0, parseFloat(inputs.fdv.value) || 0);
+        const fdvUsd = fdvNum * (inputs.fdvUnit.value === 'billion' ? 1e9 : 1e6);
+        const pct    = Math.max(0, parseFloat(inputs.airdropPct.value) || 0);
+        const s2Wks  = Math.max(0, parseFloat(inputs.s2Weeks.value) || 0);
+        let s2Pool;
+        if (poolMode === 'live' && liveAvgPool != null) s2Pool = liveAvgPool;
+        else {
+            const sv = Math.max(0, parseFloat(inputs.s2Volume.value) || 0);
+            s2Pool = weeklyPool(sv * (inputs.s2VolumeUnit.value === 'billion' ? 1e9 : 1e6));
+        }
+        const total = INITIAL_PTS + s2Wks * s2Pool;
+        return total > 0 ? fdvUsd * (pct / 100) / total : 0;
+    }
+
+    const fmtSignedUsd = n => (n < 0 ? '−' : '+') + fmtUsd(Math.abs(n));
+    // Per-point values are often fractions of a cent — show them as plain decimals, never exponents.
+    const fmtUsdPerPt = n => {
+        if (!isFinite(n) || n <= 0) return '$0';
+        if (n >= 1)     return '$' + n.toFixed(2);
+        if (n >= 0.01)  return '$' + n.toFixed(3);
+        if (n >= 0.0001) return '$' + n.toFixed(4);
+        return '<$0.0001';
+    };
+
+    function renderAccountStats() {
+        const st = acctStats;
+        if (!st || !$('wp-body')) return;
+        $('wp-subs').textContent = st.subs + ' subaccount' + (st.subs === 1 ? '' : 's');
+        $('wp-vol-all').textContent = fmtUsd(st.volAll);
+        $('wp-trades').textContent  = fmtInt(st.trades);
+        $('wp-vol-s2').textContent  = fmtUsd(st.volS2);
+
+        const eff = st.volS2 > 0 ? st.ptsS2 / (st.volS2 / 1e6) : null;
+        $('wp-eff').textContent = eff != null ? fmtInt(eff) : '—';
+        let cmp = '';
+        if (eff == null) cmp = 'No Season 2 trading volume yet.';
+        else if (platformEff) {
+            const r = eff / platformEff;
+            cmp = 'Platform average ≈ <strong>' + fmtInt(platformEff) + ' pts per $1M</strong> (last 4 weeks, approx.) — you earn <span class="' +
+                  (r >= 1 ? 'up' : 'down') + '">' + r.toFixed(1) + '×</span> the average per dollar traded.';
+        }
+        $('wp-compare').innerHTML = cmp;
+
+        // Fees / PnL / funding / net
+        const f = st.fees;
+        let feeTxt;
+        if (st.feesError) feeTxt = 'unavailable';
+        else if (f == null) feeTxt = 'scanning…';
+        else {
+            feeTxt = (st.feesScanning ? 'scanning… ' : '') + (f < 0 ? fmtSignedUsd(f) + ' rebates' : fmtUsd(f));
+            if (st.feesPartial) feeTxt += ' · first ' + fmtInt(st.feesTrades || 0) + ' trades';
+        }
+        $('wp-fees').textContent = feeTxt;
+
+        const setSigned = (id, v) => { const el = $(id); el.textContent = fmtSignedUsd(v); el.className = v >= 0 ? 'pos' : 'neg'; };
+        setSigned('wp-pnl', st.pnl);
+        setSigned('wp-funding', st.funding);
+        const net = st.pnl + st.funding;
+        setSigned('wp-net', net);
+
+        // Cost per point
+        const parts = [];
+        if (st.ptsAll > 0) {
+            const vpp = currentValuePerPoint();
+            const soFar = (st.feesScanning || st.feesPartial) ? ' (so far)' : '';
+            if (f != null && !st.feesError && f > 0) {
+                const fpp = f / st.ptsAll;
+                parts.push('Fees cost you <strong>' + fmtUsdPerPt(fpp) + '</strong> per point' + soFar + '.');
+                if (vpp > 0) parts.push('At the current scenario a point is worth ~<strong>' + fmtUsdPerPt(vpp) + '</strong> — <span class="good">' +
+                                        fmtInt(vpp / fpp) + '×</span> its fee cost.');
+            } else if (f != null && !st.feesError && f < 0) {
+                parts.push('You earned <span class="good">' + fmtUsd(-f) + '</span> in net maker rebates' + soFar + ', so fees didn\'t cost you anything.');
+            }
+            if (net < 0) parts.push('All-in (PnL after fees, plus funding) each point cost <strong>' + fmtUsdPerPt(-net / st.ptsAll) + '</strong>' +
+                                    (vpp > 0 ? ' vs ~' + fmtUsdPerPt(vpp) + ' of estimated value.' : '.'));
+            else parts.push('All-in you\'re <span class="good">up ' + fmtUsd(net) + '</span> after fees and funding, so your points came at no net cost.');
+        }
+        $('wp-cpp').innerHTML = parts.join(' ');
+    }
 
     /* ── Save results as PNG (1200×630 social card) ── */
     function buildResultsCanvas() {
