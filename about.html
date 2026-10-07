@@ -304,11 +304,11 @@ your value    <span class="op">=</span> your share × airdrop pot</div>
             <p>
                 <strong>Trading Panorama.</strong> For a tracked wallet we also read Nado's public trading API
                 (<code>archive.prod.nado.xyz</code>) across all of its subaccounts. Volume is the cumulative
-                quote volume of every product; Season 2 volume is the difference between now and the S2 start.
+                quote volume of every product, and points per $1M divides your total points by that volume.
                 Perp PnL marks open positions at the oracle price (net of fees, including liquidations), and
                 funding is shown separately. Fees are summed trade by trade — negative values are maker
                 rebates — and the scan stops after ~20k trades on very active accounts (marked as partial).
-                The platform average (points per $1M) divides the last 4 settled points pools by the last 4
+                The platform reference rate divides the last 4 settled points pools by the last 4
                 weeks of platform volume, so treat it as an approximation.
             </p>
         </div>
