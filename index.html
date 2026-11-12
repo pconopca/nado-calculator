@@ -1313,10 +1313,10 @@
                         <div class="field" style="margin-top:12px;">
                             <div class="field-label" style="font-size:11px;">
                                 Weeks of Farm
-                                <span class="field-hint">Adjustable</span>
+                                <span class="field-hint">Default: through Dec 2026</span>
                             </div>
                             <div class="input-wrap">
-                                <input type="number" id="s2-weeks" value="20" min="0" max="200" step="1" placeholder="20">
+                                <input type="number" id="s2-weeks" value="32" min="0" max="200" step="1" placeholder="32">
                                 <span class="unit-tag">WEEKS</span>
                             </div>
                             <div class="field-note" id="s2-end-date"></div>
@@ -1637,6 +1637,9 @@
     const RESERVED_PTS    =  2_000_000; // Builder Codes 1M + Comp/Reserve 1M
     const INITIAL_PTS     = DISTRIBUTED_PTS + RESERVED_PTS; // 26,941,776 pre-S2 subtotal
     const S2_START    = new Date('2026-05-22'); // Friday — S2 launch
+    // Default farm horizon: through the end of 2026 (last epoch closes Thu Dec 31 → 32 weeks)
+    const DEFAULT_FARM_END   = new Date('2027-01-01T01:00:00Z');
+    const DEFAULT_FARM_WEEKS = Math.floor((DEFAULT_FARM_END - S2_START) / (7 * 24 * 60 * 60 * 1000));
 
     /* Season 2: epoch daily avg volume → weekly points pool
        Source: Nado official Season 2 table */
@@ -3098,7 +3101,7 @@
         inputs.fdv.value          = '1';
         inputs.s2VolumeUnit.value = 'million';
         inputs.s2Volume.value     = '500';
-        inputs.s2Weeks.value      = '20';
+        inputs.s2Weeks.value      = String(DEFAULT_FARM_WEEKS);
         inputs.yourPoints.value   = '0';
         inputs.airdropPct.value   = '10';
     }
